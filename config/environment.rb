@@ -1,4 +1,4 @@
-require "Logger"
+require "logger"
 require File.expand_path "../application.rb", __FILE__
 
 include Emark
