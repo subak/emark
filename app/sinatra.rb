@@ -23,15 +23,11 @@ use Rack::Session::Cookie, {
 
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
 ActiveRecord::Base.establish_connection config.environment
-
 include Arel
 Table.engine = ActiveRecord::Base
 
-ActiveRecord::Base.connection
-
 ##
 # sinatra
-
 configure do
   disable :show_exceptions
   set :environment, config.environment
@@ -83,7 +79,6 @@ end
 
 get "/" do
   if oauthVerifier = request.params['oauth_verifier']
-
     requestToken = env["rack.session"][:request_token]
     raise Forbidden, "request_token" if requestToken.!
 
@@ -133,6 +128,7 @@ get "/" do
       db.execute sql
     end
 
+    env["rack.session"] = {}
     response.set_cookie:sid, value: sid, expires: Time.at(expires)
 
     body "/"

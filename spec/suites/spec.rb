@@ -6,22 +6,32 @@ require "rack/test"
 require "nokogiri"
 
 use Rack::SSL
-get "/spec/request_token" do
-  request_token("/")
-end
+
+config.environment  = :spec
+config.logger_level = Logger::INFO
 
 before do
   logger = Logger.new(STDOUT)
-  logger.level = Logger::DEBUG
+  logger.level = config.logger_level
   env["rack.logger"] = logger
-
 end
 
-get "/spec/access_token" do
-  # puts "gogog"
-  # puts insert.to_sql
+ActiveRecord::Base.clear_all_connections!
+ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
+ActiveRecord::Base.establish_connection config.environment
+Table.engine = ActiveRecord::Base
 
-  "hogehuga"
+set :db, ActiveRecord::Base.connection.raw_connection
+set :db_session, Table.new(:session)
+
+helpers do
+  def db.session
+    settings.db_session
+  end
+
+  def db
+    settings.db
+  end
 end
 
 RSpec.configure do
@@ -31,120 +41,71 @@ RSpec.configure do
     Helpers::RunLoop.new(Sinatra::Application)
   end
 
-  def sync &block
-    EM.run do
-      fb = Fiber.new do
-        block.call
-      end
-      fb.resume
-
-      ender = proc do |fb|
-        EM.next_tick do
-          if fb.alive?
-            ender.call fb
-          else
-            EM.stop
-          end
-        end
-      end
-      ender.call fb
-    end
-  end
-
-  def fetch(uri_str, limit = 10)
-    # You should choose better exception.
-    raise ArgumentError, 'HTTP redirect too deep' if limit == 0
-
-    response = Net::HTTP.get_response(URI.parse(uri_str))
-    case response
-    when Net::HTTPSuccess
-      response
-    when Net::HTTPRedirection
-      fetch(response['location'], limit - 1)
-    else
-      response.value
-    end
-  end
-
+  Result = Hashie::Mash.new
 end
 
+# describe "request_token" do
+#   before do
+#     url = URI::Generic.
+#       build(
+#       scheme: config.admin_protocol,
+#       host:   config.admin_host,
+#       port:   config.admin_port,
+#       path:   "/").to_s
 
-describe "helpers" do
-  Result = Hashie::Mash.new
+#     get(url)
+#   end
 
-  it "request_token" do
+#   it "bodyにcallbackurlを返す" do
+#     url     = last_response.body
+#     url.should be_true
 
-    url = URI::Generic.
+#     Result.auth_url = url
+#   end
+
+#   it "cookieにrack.sessionを持つ" do
+#     cookies = last_response.headers["Set-Cookie"]
+#     cookies.should be_true
+
+#     pp rack_mock_session.cookie_jar.cookies
+
+#     Result.cookies = rack_mock_session.cookie_jar.cookies
+#   end
+# end
+
+describe "access_token" do
+  before:all do
+    @url = URI::Generic.
       build(
       scheme: config.admin_protocol,
       host:   config.admin_host,
       port:   config.admin_port,
       path:   "/").to_s
 
-    get(url)
-
-    Result.auth_url = last_response.body
-    Result.cookie   = last_response.headers["Set-Cookie"]
+    get(@url)
+    request_url = last_response.body
+    logger.info request_url
+    cookies     = rack_mock_session.cookie_jar.cookies
+    get(access_url(request_url), {}, {
+          "HTTP_COOKIE" => cookies.join("; ")
+        })
   end
 
-  it "request_token" do
+  # it "rack.sessionがないアクセスで403になる" do
+  #   get(@url, oauth_verifier: oauth_verifier(Result.auth_url))
+  #   last_response.forbidden?.should be_true
+  # end
 
-    html = `curl -L "#{Result.auth_url}"`
+  it "response.bodyは/を返す" do
+    last_response.body.should == "/"
+  end
 
-    File.open "tmp/req.html", "w" do |fp|
-      fp.puts html
-    end
+  it "cookieはsidを含む" do
+    rack_mock_session.cookie_jar["sid"].should be_true
+  end
 
-    pending
-
-    doc = Nokogiri::HTML(html)
-
-    form = doc.css("#login_form")
-
-    action = form.attr("action")
-    targetUrl = form.css("input[name='targetUrl']")[0].attr("value")
-
-
-    uri = URI.parse(Result.auth_url)
-
-    com = <<COM
-curl -L \
--d "username=subak-en-test" \
--d "password=passpass" \
--d "login=Sign in" \
--d "targetUrl=#{targetUrl}" \
-"#{config.evernote_site}#{action}"
-COM
-
-    puts com
-
-    html = `#{com}`
-
-    File.open "tmp/res.html", "w" do |fp|
-      fp.puts html
-    end
-
-
-#    puts Net::HTTP.get(URI.parse Result.auth_url)
-#    req = Net::HTTPRequest::Get Result.auth_url
-
-    # pending
-    # get("https://example.com/spec/request_token")
-    # url = last_response.body
-    # url.should match %r(^https://)
+  it "hoge" do
+    p rack_mock_session.cookie_jar["rack.session"]
   end
 end
-
-# describe 'get("/")は' do
-#   it "helloを返す" do
-#     pending
-
-#     get("https://example.com/")
-
-#     p last_response.body
-#     p last_response.headers
-#     p last_response.successful?
-#   end
-# end
-
 
