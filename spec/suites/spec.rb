@@ -90,6 +90,12 @@ describe "access_token" do
     end
   end
 
+
+  2.times do |time|
+    p time
+
+  end
+
   context "success" do
     before:all do
       url = URI::Generic.
