@@ -41,6 +41,14 @@ RSpec.configure do
     Helpers::RunLoop.new(Sinatra::Application)
   end
 
+  def db
+    ActiveRecord::Base.connection.raw_connection
+  end
+
+  def db.session
+    Table.new(:session)
+  end
+
   Result = Hashie::Mash.new
 end
 
@@ -90,42 +98,51 @@ describe "access_token" do
     end
   end
 
-
-  2.times do |time|
-    p time
-
-  end
-
-  context "success" do
+  describe "success" do
     before:all do
-      url = URI::Generic.
-        build(
-        scheme: config.admin_protocol,
-        host:   config.admin_host,
-        port:   config.admin_port,
-        path:   "/").to_s
-
-      clear_cookies
-      get(url)
-      request_url = last_response.body
-
-      get(access_url(request_url))
+      delete = DeleteManager.new Table.engine
+      delete.from db.session
+      db.execute delete.to_sql
     end
 
-    it "response.bodyは/を返す" do
-      last_response.body.should == "/"
-    end
+    2.times do |time|
+      label = (0 == time) ? "insert" : "update"
+      context label do
+        before:all do
+          @url = URI::Generic.
+            build(
+            scheme: config.admin_protocol,
+            host:   config.admin_host,
+            port:   config.admin_port,
+            path:   "/").to_s
 
-    it "cookieはsidを含む" do
-      rack_mock_session.cookie_jar["sid"].should be_true
-    end
+          clear_cookies
+          get(@url)
+          request_url = last_response.body
 
-    # トラフィックの節約
-    it "request_tokenが消されていること" do
-      session = Rack::Session::Cookie::Base64::Marshal.new.decode rack_mock_session.cookie_jar["rack.session"]
-      session[:request_token].should be_false
+          get(access_url(request_url))
+        end
+
+        it "response.bodyは/を返す" do
+          last_response.body.should == "/"
+        end
+
+        it "cookieはsidを含む" do
+          rack_mock_session.cookie_jar["sid"].should be_true
+        end
+
+        # トラフィックの節約
+        it "request_tokenが消されていること" do
+          session = Rack::Session::Cookie::Base64::Marshal.new.decode rack_mock_session.cookie_jar["rack.session"]
+          session[:request_token].should be_false
+        end
+
+        it "dashboardへリダイレクトされること" do
+          get(@url)
+          last_response.body.should == "/dashboard"
+        end
+      end
     end
   end
-
 end
 
