@@ -79,6 +79,9 @@ end
 
 get "/" do
   if oauthVerifier = request.params['oauth_verifier']
+    ##
+    # access_token
+
     requestToken = env["rack.session"][:request_token]
     raise Forbidden, "request_token" if requestToken.!
 
@@ -128,22 +131,24 @@ get "/" do
       db.execute sql
     end
 
-    env["rack.session"] = {}
+    env["rack.session"][:request_token] = nil
     response.set_cookie:sid, value: sid, expires: Time.at(expires)
 
     body "/"
 
   elsif @session[:authtoken]
     body '/dashboard'
-  else
-    redirectPath = "/"
 
+  else
+    ##
+    # request token
+
+    redirectPath = "/"
     callbackUrl = URI::Generic.build(
                                scheme: config.admin_protocol,
                                host:   config.admin_host,
                                port:   config.admin_port,
                                path:   redirectPath)
-
     consumer = OAuth::Consumer.
       new(
       config.evernote_oauth_consumer_key,
@@ -158,7 +163,6 @@ get "/" do
     end
 
     env["rack.session"][:request_token] = requestToken
-
     body requestToken.authorize_url
   end
 end

@@ -44,70 +44,82 @@ RSpec.configure do
   Result = Hashie::Mash.new
 end
 
-# describe "request_token" do
-#   before do
-#     url = URI::Generic.
-#       build(
-#       scheme: config.admin_protocol,
-#       host:   config.admin_host,
-#       port:   config.admin_port,
-#       path:   "/").to_s
-
-#     get(url)
-#   end
-
-#   it "bodyにcallbackurlを返す" do
-#     url     = last_response.body
-#     url.should be_true
-
-#     Result.auth_url = url
-#   end
-
-#   it "cookieにrack.sessionを持つ" do
-#     cookies = last_response.headers["Set-Cookie"]
-#     cookies.should be_true
-
-#     pp rack_mock_session.cookie_jar.cookies
-
-#     Result.cookies = rack_mock_session.cookie_jar.cookies
-#   end
-# end
-
-describe "access_token" do
+describe "request_token" do
   before:all do
-    @url = URI::Generic.
+    url = URI::Generic.
       build(
       scheme: config.admin_protocol,
       host:   config.admin_host,
       port:   config.admin_port,
       path:   "/").to_s
 
-    get(@url)
-    request_url = last_response.body
-    logger.info request_url
-    cookies     = rack_mock_session.cookie_jar.cookies
-    get(access_url(request_url), {}, {
-          "HTTP_COOKIE" => cookies.join("; ")
-        })
+    get(url)
   end
 
-  # it "rack.sessionがないアクセスで403になる" do
-  #   get(@url, oauth_verifier: oauth_verifier(Result.auth_url))
-  #   last_response.forbidden?.should be_true
-  # end
-
-  it "response.bodyは/を返す" do
-    last_response.body.should == "/"
+  it "bodyにcallbackurlを返す" do
+    last_response.body.include?(config.evernote_site).should be_true
   end
 
-  it "cookieはsidを含む" do
-    rack_mock_session.cookie_jar["sid"].should be_true
+  it "rack.sessionがrequest_tokenを持つこと" do
+    session = Rack::Session::Cookie::Base64::Marshal.new.decode rack_mock_session.cookie_jar["rack.session"]
+    session[:request_token].should.respond_to?(:authorize_url)
+  end
+end
+
+describe "access_token" do
+
+  context "fail" do
+    before do
+      url = URI::Generic.
+        build(
+        scheme: config.admin_protocol,
+        host:   config.admin_host,
+        port:   config.admin_port,
+        path:   "/").to_s
+
+      clear_cookies
+      get(url)
+      @request_url = last_response.body
+    end
+
+    it "sessionの情報を持たない時は403" do
+      clear_cookies
+      get(access_url(@request_url))
+
+      last_response.forbidden?.should be_true
+    end
   end
 
-  it "hoge" do
-    session = rack_mock_session.cookie_jar["rack.session"]
-    m = Rack::Session::Cookie::Base64::Marshal.new
-    pp m.decode(session)
+  context "success" do
+    before:all do
+      url = URI::Generic.
+        build(
+        scheme: config.admin_protocol,
+        host:   config.admin_host,
+        port:   config.admin_port,
+        path:   "/").to_s
+
+      clear_cookies
+      get(url)
+      request_url = last_response.body
+
+      get(access_url(request_url))
+    end
+
+    it "response.bodyは/を返す" do
+      last_response.body.should == "/"
+    end
+
+    it "cookieはsidを含む" do
+      rack_mock_session.cookie_jar["sid"].should be_true
+    end
+
+    # トラフィックの節約
+    it "request_tokenが消されていること" do
+      session = Rack::Session::Cookie::Base64::Marshal.new.decode rack_mock_session.cookie_jar["rack.session"]
+      session[:request_token].should be_false
+    end
   end
+
 end
 
