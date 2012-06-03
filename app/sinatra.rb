@@ -1,6 +1,9 @@
-# -*- coding: utf-8; -*-
+# -*- coding: utf-8 -*-
 
+require "pp"
+require "digest/md5"
 Bundler.require :default
+require "./lib/override/sqlite3"
 
 require "./config/environment"
 include Emark
@@ -14,30 +17,32 @@ require "errors_types.rb"
 Thread.abort_on_exception = config.thread_abort
 EM.threadpool_size = 100
 use Rack::FiberPool , :size => 200
+use Rack::Session::Cookie, {
+  :http_only => true,
+  :secure => true}
 
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
-ActiveRecord::Base.establish_connection :test
+ActiveRecord::Base.establish_connection config.environment
 
 include Arel
 Table.engine = ActiveRecord::Base
+
+ActiveRecord::Base.connection
 
 ##
 # sinatra
 
 configure do
   disable :show_exceptions
+  set :environment, config.environment
   set :db, ActiveRecord::Base.connection.raw_connection
-  set :tbl_a, Table.new(:tbl_a)
-
-  @@ext = Subak::Extsource.new
-  @@ext.parser:sql, Subak::Parser::Sql
-  @@ext.source:sql, :http, "#{PROJECT_ROOT}/app/assets/sql/http.sql"
-  @@db  = SQLite3::Database.new "#{PROJECT_ROOT}/db/http.db"
-  @@db.execute "ATTACH DATABASE '#{PROJECT_ROOT}/db/publish.db' AS publish"
-  @@db.busy_timeout 1000
+  set :db_session, Table.new(:session)
 end
 
-helper do
+helpers do
+  def db.session
+    settings.db_session
+  end
 
   def db
     settings.db
@@ -55,10 +60,200 @@ error Forbidden do
   403
 end
 
+before do
+  logger.level = config.logger_level
+
+  @session = {}
+  sid = request.cookies["sid"]
+
+  if sid
+    select = db.session.project(SqlLiteral.new "*")
+    select.where(db.session[:sid].eq sid)
+    select.where(db.session[:expires].gt Time.now.to_i)
+    query select.to_sql do |sql|
+      @session = db.get_first_row sql
+    end
+
+    if @session.!
+      response.delete_cookie:sid
+      halt(403)
+    end
+  end
+end
 
 get "/" do
+  if oauthVerifier = request.params['oauth_verifier']
 
+    requestToken = env["rack.session"][:request_token]
+    raise Forbidden, "request_token" if requestToken.!
+
+    accessToken = thread do
+      requestToken.get_access_token :oauth_verifier => oauthVerifier
+    end
+
+    user = thread do
+      userStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/user")
+      userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
+      userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
+      user = userStore.getUser(accessToken.params[:oauth_token])
+    end
+
+    select = db.session.project db.session[:user_id]
+    select.where(db.session[:user_id].eq user.id)
+    res = query select.to_sql do |sql|
+      db.get_first_value sql
+    end
+
+    sid     = Digest::MD5.new.update(Time.now.to_f.to_s).to_s
+    expires = (accessToken.params[:edam_expires].to_i/1000).to_i
+    manager =
+      if res
+        update = UpdateManager.new Table.engine
+        update.table db.session
+        update.set([
+                     [db.session[:authtoken], accessToken.params[:oauth_token]],
+                     [db.session[:expires],   expires],
+                     [db.session[:sid],       sid]
+                   ])
+        update
+      else
+        insert = InsertManager.new Table.engine
+        insert.into db.session
+        insert.insert([
+                        [db.session[:user_id],   user.id],
+                        [db.session[:shard],     user.shardId],
+                        [db.session[:authtoken], accessToken.params[:oauth_token]],
+                        [db.session[:expires],   expires],
+                        [db.session[:sid],       sid]
+                      ])
+        insert
+      end
+
+    query manager.to_sql do |sql|
+      db.execute sql
+    end
+
+    response.set_cookie:sid, value: sid, expires: Time.at(expires)
+
+    body "/"
+
+  elsif @session[:authtoken]
+    body '/dashboard'
+  else
+    redirectPath = "/"
+
+    callbackUrl = URI::Generic.build(
+                               scheme: config.admin_protocol,
+                               host:   config.admin_host,
+                               port:   config.admin_port,
+                               path:   redirectPath)
+
+    consumer = OAuth::Consumer.
+      new(
+      config.evernote_oauth_consumer_key,
+      config.evernote_oauth_consumer_secret,
+      site:               config.evernote_site,
+      request_token_path: "/oauth",
+      access_token_path:  "/oauth",
+      authorize_path:     "/OAuth.action")
+
+    requestToken = thread do
+      consumer.get_request_token(:oauth_callback => callbackUrl)
+    end
+
+    env["rack.session"][:request_token] = requestToken
+
+    body requestToken.authorize_url
+  end
 end
+
+def query *args, &block
+  logger.debug args[0]
+
+  num = 0
+  fb = Fiber.current
+  tick = proc do
+    EM.next_tick do
+      begin
+        res = block.call *args
+      rescue SQLite3::BusyException, SQLite3::LockedException
+        num += 1
+        p "tick:#{num}"
+        tick.call
+      else
+        fb.resume res
+      end
+    end
+  end
+  tick.call
+  Fiber.yield
+end
+
+def thread &block
+  fb = Fiber.current
+  EM.
+    defer(
+    EM.Callback do
+            begin
+              block.call
+            rescue Exception => e
+              e
+            end
+          end,
+    EM.Callback { |e| fb.resume e })
+  e = Fiber.yield
+  raise e if e.kind_of? Exception
+  e
+end
+
+def access_token oauthVerifier
+  requestToken = env["rack.session"][:request_token]
+
+  raise Forbidden, "request_token" if requestToken.!
+
+  accessToken = thread do
+    requestToken.get_access_token oauth_verifier: oauthVerifier
+  end
+
+  user = thread do
+    userStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/user")
+    userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
+    userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
+    userStore.getUser accessToken.params["oauth_token"]
+  end
+
+  insert = db.session.insert_manager
+  insert.
+    insert([
+             [db.session[:user_id],   user.id],
+             [db.session[:shard],     user.shardId],
+             [db.session[:authtoken], accessToken["auth_token"]],
+             [db.session[:expires],   accessToken["edam_expires"]]
+           ])
+
+  query insert.to_sql do |sql|
+    db.execute sql
+  end
+
+  200
+
+#  insert = InsertManager.new Table.engine
+  # vars = {
+  #   userId:          user.id,
+  #   username:        user.username,
+  #   shard:           user.shardId,
+  #   noteStoreUrl:    access_token.params['edam_noteStoreUrl'],
+  #   webApiUrlPrefix: access_token.params['edam_webApiUrlPrefix'],
+  #   authToken:       access_token.params['oauth_token'],
+  #   expires:         access_token.params['edam_expires'],
+  # }
+  # vars[:sid] = @io.set_sid (vars[:expires].to_i/1000).to_i
+  # @io.update_session vars
+  # 200
+end
+
+
+
 
 __END__
 

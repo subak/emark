@@ -14,7 +14,9 @@ config.evernote_oauth_consumer_secret = "df5c4560b5604a97"
 config.evernote_user_notes_max =        500
 config.cache_host = "everblog.cdn-cache.com"
 
-case ENV["RACK_ENV"]
+config.environment = ENV["RACK_ENV"]
+
+case config.environment
 when "production"
   config.site_protocol =  "http"
   config.site_host =      "everblog.subak.jp"

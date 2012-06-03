@@ -2,3 +2,5 @@
 /Gemfile.lock
 /vender
 /db/*.sqlite3
+/tmp/*
+!/tmp/.gitkeep
