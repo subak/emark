@@ -105,7 +105,9 @@ describe "access_token" do
   end
 
   it "hoge" do
-    p rack_mock_session.cookie_jar["rack.session"]
+    session = rack_mock_session.cookie_jar["rack.session"]
+    m = Rack::Session::Cookie::Base64::Marshal.new
+    pp m.decode(session)
   end
 end
 
