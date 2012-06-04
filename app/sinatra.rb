@@ -2,6 +2,7 @@
 
 require "pp"
 require "digest/md5"
+require "json"
 Bundler.require :default
 require "./lib/override/sqlite3"
 
@@ -74,6 +75,8 @@ before do
       response.delete_cookie:sid
       halt(403)
     end
+  elsif request.path != "/"
+    halt 403
   end
 end
 
@@ -167,7 +170,49 @@ get "/" do
   end
 end
 
+get "/dashboard" do
+  blogs = []
+  @io.get_blogs(@userId).each do |blogid, var|
+    blogs << var
+  end
 
+  sleep 1
+
+  body({blogs: blogs}.to_json)
+end
+
+get "/open" do
+  sleep 1
+
+  notebooks = thread do
+    noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{@session[:shard]}")
+    noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
+    noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
+    notebooks = noteStore.listNotebooks(@session[:authtoken])
+  end
+
+  data = {}
+  data[:notebooks] = []
+  notebooks.each do |notebook|
+    notebookData = {
+      notebookName: notebook.name.force_encoding("UTF-8"),
+      notebookGuid: notebook.guid
+    }
+    notebookData[:available] = true
+    data[:notebooks] << notebookData
+  end
+
+  body data.to_json
+end
+
+def sleep wait
+  fb = Fiber.current
+  logger.debug "sleep wait:#{wait}"
+  EM.add_timer wait do
+    fb.resume
+  end
+  Fiber.yield
+end
 
 def query *args, &block
   logger.debug args[0]
@@ -207,9 +252,6 @@ def thread &block
   raise e if e.kind_of? Exception
   e
 end
-
-
-
 
 
 __END__

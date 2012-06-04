@@ -4,6 +4,7 @@ require "pp"
 require "fiber"
 require "eventmachine"
 require "logger"
+require "digest/md5"
 require "simplecov"
 SimpleCov.start do
   add_filter "vender/bundle/"
@@ -74,7 +75,7 @@ module Helpers
   end
 
   SpecLogger = ::Logger.new(STDOUT)
-  SpecLogger.level = ::Logger::INFO
+  SpecLogger.level = config.logger_level
   def logger
     SpecLogger
   end
