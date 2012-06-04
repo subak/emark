@@ -8,3 +8,4 @@ end
 
 require "./spec/token_spec"
 require "./spec/open_spec"
+require "./spec/get_spec"

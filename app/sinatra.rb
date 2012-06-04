@@ -176,12 +176,16 @@ get "/" do
 end
 
 get "/dashboard" do
-  blogs = []
-  @io.get_blogs(@userId).each do |blogid, var|
-    blogs << var
-  end
-
   sleep 1
+
+  blogs = []
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:user_id].eq @session[:user_id])
+  query select.to_sql do |sql|
+    db.execute sql do |row|
+      blogs << row
+    end
+  end
 
   body({blogs: blogs}.to_json)
 end
@@ -229,6 +233,39 @@ get "/open" do
 
   body data.to_json
 end
+
+##
+# 設定
+get "/config/:blog_id" do |blog_id|
+  sleep 1
+
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:user_id].eq @session[:user_id])
+  select.where(db.blog[:blog_id].eq blog_id)
+  row = query select.to_sql do |sql|
+    db.get_first_row sql
+  end
+  raise Forbidden if row.!
+
+  body row.to_json
+end
+
+##
+# blogidのチェック
+get "/check/blogid/:blog_id" do |blog_id|
+  select = db.blog.project(db.blog[:blog_id])
+  select.where(db.blog[:blog_id].eq blog_id)
+  check = query select.to_sql do |sql|
+    db.get_first_value sql
+  end
+
+  body({available: check.!}.to_json)
+
+  # data = {}
+  # data[:available] = @io.blog_exists?(blogid) ? false : true
+  # body data.to_json
+end
+
 
 def sleep wait
   fb = Fiber.current

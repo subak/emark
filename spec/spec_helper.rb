@@ -105,6 +105,24 @@ module Helpers
       path:   path).to_s
   end
 
+  def md5
+    Digest::MD5.new.update(Time.now.to_f.to_s).to_s
+  end
+
+  def get_session
+    select = db.session.project(SqlLiteral.new "*")
+    select.where(db.session[:user_id].eq 25512727)
+    @session = db.get_first_row select.to_sql
+    raise "session error" if @session.!
+  end
+
+  def delete_blog
+    delete = DeleteManager.new Table.engine
+    delete.from db.blog
+#    delete.where(db.blog[:user_id].eq @session[:user_id])
+    db.execute delete.to_sql
+  end
+
   def sync &block
     EM.run do
       fb = Fiber.new do

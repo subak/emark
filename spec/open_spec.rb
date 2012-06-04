@@ -63,10 +63,7 @@ describe "ノートブック公開" do
         end
 
         # 公開ブログを削除
-        delete = DeleteManager.new Table.engine
-        delete.from db.blog
-        delete.where(db.blog[:user_id].eq @session[:user_id])
-        db.execute delete.to_sql
+        delete_blog
       end
 
       it "共有されないノートは選択できない" do
