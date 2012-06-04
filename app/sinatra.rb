@@ -306,8 +306,22 @@ post "/open" do
   200
 end
 
-put '/config/:blogid' do |blogid|
-  @io.set_blog_config params, blogid, @userId
+put '/config/:blog_id' do |blog_id|
+  update = UpdateManager.new Table.engine
+  update.table db.blog
+  update.where(db.blog[:user_id].eq @session[:user_id])
+  update.where(db.blog[:blog_id].eq blog_id)
+  update.set([
+               [db.blog[:title],  params["title"]],
+               [db.blog[:author], params["author"]]
+             ])
+  query update.to_sql do |sql|
+    db.transaction do
+      db.execute sql
+      raise Forbidden if (db.changes >= 1).!
+    end
+  end
+
   sleep 3
   200
 end
@@ -378,13 +392,17 @@ def query *args, &block
         num += 1
         p "tick:#{num}"
         tick.call
+      rescue Exception => e
+        fb.resume e
       else
         fb.resume res
       end
     end
   end
   tick.call
-  Fiber.yield
+  res = Fiber.yield
+  raise res if res.kind_of?(Exception)
+  res
 end
 
 def thread &block

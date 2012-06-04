@@ -10,18 +10,18 @@ RSpec.configure do
   include Rack::Test::Methods
 end
 
-describe "post /open" do
+describe "put /config" do
   before:all do
     delete_blog
   end
 
   it "sid無し" do
-    post "/open"
+    put "/config/test.example.com"
     last_response.forbidden?.should be_true
   end
 
   it "不正なsid" do
-    post("/open", {}, {
+    put("/config/test.example.com", {}, {
            "HTTP_COOKIE" => "sid=joifei83j3"
          })
     last_response.forbidden?.should be_true
@@ -33,111 +33,37 @@ describe "post /open" do
       @http_cookie = "sid=#{@session[:sid]}"
     end
 
-    it "session無し" do
-      post("/open", {}, {
+    it "不正なblog_id" do
+      put("/config/test.example.com", {}, {
              "HTTP_COOKIE" => @http_cookie
            })
       last_response.forbidden?.should be_true
     end
 
-    describe "session有り" do
+    describe "200" do
       before:all do
-        @blog_id = "test.example.com"
+        insert = db.blog.insert_manager
+        insert.insert([
+                        [db.blog[:user_id], @session[:user_id]],
+                        [db.blog[:blog_id], "test.example.com"]
+                      ])
+        db.execute insert.to_sql
+      end
 
-        ##
-        # 共有状態にする
-        noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{@session[:shard]}")
-        noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
-        @noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
-        notebooks = @noteStore.listNotebooks(@session[:authtoken])
-        notebooks.each do |notebook|
-          begin
-            publishing = Evernote::EDAM::Type::Publishing.
-              new(:uri => @blog_id)
-            newbook = Evernote::EDAM::Type::Notebook.
-              new(
-              :guid       => notebook.guid,
-              :name       => notebook.name,
-              :publishing => publishing,
-              :published  => true)
-            @noteStore.updateNotebook @session[:authtoken], newbook
-          rescue Exception => e
-            pp e
-          end
-        end
-
-        @guid = notebooks.first.guid
-        get("https://example.com/open", {}, {
-              "HTTP_COOKIE"  => @http_cookie
+      it "パラメータ無し" do
+        put("/config/test.example.com", {}, {
+              "HTTP_COOKIE" => @http_cookie
             })
-
-        cookies = rack_mock_session.cookie_jar.cookies
-        cookies << @http_cookie
-        @http_cookie = cookies.join("; ")
-        clear_cookies
+        last_response.ok?.should be_true
       end
 
-      it "パラメータなし" do
-        post("https://example.com/open", {}, {
-               "HTTP_COOKIE"  => @http_cookie,
-             })
-        last_response.forbidden?.should be_true
-      end
-
-      it "notebookGuidがない" do
-        pending "後で"
-      end
-      it "domainがない" do
-        pending "後で"
-      end
-      it "subdomainがない" do
-        pending "後で"
-      end
-
-      it "ノートブックが含まれていない" do
-        post("/open", {
-               "domain"       => "hoge",
-               "subdomain"    => "example.com",
-               "notebookGuid" => "dummydummydummy"
-             }, {
-               "HTTP_COOKIE"  => @http_cookie
-             })
-        last_response.forbidden?.should be_true
-      end
-
-      describe "ノートブックが含まれている" do
-        it "ドメイン名が不正" do
-          post("/open", {
-                 "domain"       => "--hoge@@",
-                 "subdomain"    => "example.com",
-                 "notebookGuid" => @guid
-               }, {
-                 "HTTP_COOKIE"  => @http_cookie
-               })
-          last_response.forbidden?.should be_true
-        end
-
-        it "200" do
-          post("/open", {
-                 "domain"       => "test",
-                 "subdomain"    => "example.com",
-                 "notebookGuid" => @guid
-               }, {
-                 "HTTP_COOKIE" => @http_cookie
-               })
-          last_response.ok?.should be_true
-        end
-
-        it "すでに公開されているブログ" do
-          post("/open", {
-                 "domain"       => "test",
-                 "subdomain"    => "example.com",
-                 "notebookGuid" => @guid
-               }, {
-                 "HTTP_COOKIE" => @http_cookie
-               })
-          last_response.forbidden?.should be_true
-        end
+      it "パラメータ有り" do
+        put("/config/test.example.com", {
+              "title" => "hogehuga"
+            }, {
+              "HTTP_COOKIE" => @http_cookie
+            })
+        last_response.ok?.should be_true
       end
     end
   end
