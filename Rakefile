@@ -4,6 +4,12 @@ task :install do
 end
 
 task :default => :spec
+task :spec => :init
+
+desc "init"
+task :init do
+  sh "bundle exec rake db:migrate RAILS_ENV=spec"
+end
 
 begin
   require "rspec/core/rake_task"
