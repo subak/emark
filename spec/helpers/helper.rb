@@ -4,6 +4,12 @@ require "pp"
 require "fiber"
 require "eventmachine"
 require "logger"
+require "simplecov"
+SimpleCov.start do
+  add_filter "vender/bundle/"
+  add_filter "lib/Evernote/"
+end
+
 
 module Rack
   module Test

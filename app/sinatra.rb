@@ -167,6 +167,8 @@ get "/" do
   end
 end
 
+
+
 def query *args, &block
   logger.debug args[0]
 
@@ -206,51 +208,6 @@ def thread &block
   e
 end
 
-def access_token oauthVerifier
-  requestToken = env["rack.session"][:request_token]
-
-  raise Forbidden, "request_token" if requestToken.!
-
-  accessToken = thread do
-    requestToken.get_access_token oauth_verifier: oauthVerifier
-  end
-
-  user = thread do
-    userStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/user")
-    userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
-    userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
-    userStore.getUser accessToken.params["oauth_token"]
-  end
-
-  insert = db.session.insert_manager
-  insert.
-    insert([
-             [db.session[:user_id],   user.id],
-             [db.session[:shard],     user.shardId],
-             [db.session[:authtoken], accessToken["auth_token"]],
-             [db.session[:expires],   accessToken["edam_expires"]]
-           ])
-
-  query insert.to_sql do |sql|
-    db.execute sql
-  end
-
-  200
-
-#  insert = InsertManager.new Table.engine
-  # vars = {
-  #   userId:          user.id,
-  #   username:        user.username,
-  #   shard:           user.shardId,
-  #   noteStoreUrl:    access_token.params['edam_noteStoreUrl'],
-  #   webApiUrlPrefix: access_token.params['edam_webApiUrlPrefix'],
-  #   authToken:       access_token.params['oauth_token'],
-  #   expires:         access_token.params['edam_expires'],
-  # }
-  # vars[:sid] = @io.set_sid (vars[:expires].to_i/1000).to_i
-  # @io.update_session vars
-  # 200
-end
 
 
 

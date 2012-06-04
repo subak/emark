@@ -18,6 +18,7 @@ group :cli do
   gem "standalone_migrations"
   gem "thin"
   gem "rspec"
+  gem "simplecov"
 end
 
 group :publich do
