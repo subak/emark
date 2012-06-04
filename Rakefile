@@ -3,17 +3,7 @@ task :install do
   sh "bundle install --path vender/bundle"
 end
 
-# desc "test"
-# task :test do
-#   sh "bundle exec rspec spec/suites/spec.rb"
-# end
-
-# namespace:spec do
-#   desc "spec:open"
-#   task:open do
-#     sh "bundle exec rspec -cfs spec/suites/spec2.rb"
-#   end
-# end
+task :default => :spec
 
 begin
   require "rspec/core/rake_task"
