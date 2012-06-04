@@ -11,7 +11,18 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120531171053) do
+ActiveRecord::Schema.define(:version => 20120604074259) do
+
+  create_table "blog", :force => true do |t|
+    t.text    "blog_id",  :default => "", :null => false
+    t.integer "user_id",  :default => 0,  :null => false
+    t.text    "notebook"
+    t.text    "title"
+    t.text    "subtitle"
+    t.text    "author"
+  end
+
+  add_index "blog", ["blog_id"], :name => "index_blog_on_blog_id", :unique => true
 
   create_table "session", :force => true do |t|
     t.integer "user_id",       :default => 0, :null => false
