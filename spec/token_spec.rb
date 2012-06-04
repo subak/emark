@@ -1,55 +1,50 @@
 # -*- coding: utf-8; -*-
 
-require "./spec/helpers/helper.rb"
 require "./app/sinatra"
-require "rack/test"
-require "nokogiri"
-
-use Rack::SSL
-
 config.environment  = :spec
 config.logger_level = Logger::INFO
+require "./spec/spec_helper.rb"
 
-before do
-  logger = Logger.new(STDOUT)
-  logger.level = config.logger_level
-  env["rack.logger"] = logger
-end
+# before do
+#   logger = Logger.new(STDOUT)
+#   logger.level = config.logger_level
+#   env["rack.logger"] = logger
+# end
 
-ActiveRecord::Base.clear_all_connections!
-ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
-ActiveRecord::Base.establish_connection config.environment
-Table.engine = ActiveRecord::Base
+# ActiveRecord::Base.clear_all_connections!
+# ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
+# ActiveRecord::Base.establish_connection config.environment
+# Table.engine = ActiveRecord::Base
 
-set :db, ActiveRecord::Base.connection.raw_connection
-set :db_session, Table.new(:session)
+# set :db, ActiveRecord::Base.connection.raw_connection
+# set :db_session, Table.new(:session)
 
-helpers do
-  def db.session
-    settings.db_session
-  end
+# helpers do
+#   def db.session
+#     settings.db_session
+#   end
 
-  def db
-    settings.db
-  end
-end
+#   def db
+#     settings.db
+#   end
+# end
 
 RSpec.configure do
   include Helpers
   include Rack::Test::Methods
-  def app
-    Helpers::RunLoop.new(Sinatra::Application)
-  end
+  # def app
+  #   Helpers::RunLoop.new(Sinatra::Application)
+  # end
 
-  def db
-    ActiveRecord::Base.connection.raw_connection
-  end
+  # def db
+  #   ActiveRecord::Base.connection.raw_connection
+  # end
 
-  def db.session
-    Table.new(:session)
-  end
+  # def db.session
+  #   Table.new(:session)
+  # end
 
-  Result = Hashie::Mash.new
+  # Result = Hashie::Mash.new
 end
 
 describe "request_token" do

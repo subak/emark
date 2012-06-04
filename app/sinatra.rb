@@ -34,11 +34,16 @@ configure do
   set :environment, config.environment
   set :db, ActiveRecord::Base.connection.raw_connection
   set :db_session, Table.new(:session)
+  set :db_blog,    Table.new(:blog)
 end
 
 helpers do
   def db.session
     settings.db_session
+  end
+
+  def db.blog
+    settings.db_blog
   end
 
   def db
@@ -191,6 +196,16 @@ get "/open" do
     notebooks = noteStore.listNotebooks(@session[:authtoken])
   end
 
+  # 公開済みノートブック
+  opend_books = []
+  select = db.blog.project(db.blog[:notebook])
+  select.where(db.blog[:user_id].eq(@session[:user_id]))
+  query select.to_sql do |sql|
+    db.execute sql do |row|
+      opend_books << row[:notebook]
+    end
+  end
+
   data = {}
   data[:notebooks] = []
   notebooks.each do |notebook|
@@ -198,9 +213,19 @@ get "/open" do
       notebookName: notebook.name.force_encoding("UTF-8"),
       notebookGuid: notebook.guid
     }
-    notebookData[:available] = true
+    notebookData[:available] = true if notebook.published and opend_books.include?(notebook.guid).!
     data[:notebooks] << notebookData
   end
+
+  ##
+  # post された時のチェックに使う
+  # tiketのようなもの
+  availables = {}
+  data[:notebooks].each do |notebook|
+    next if notebook[:available].!
+    availables[notebook[:notebookGuid]] = notebook[:notebookName]
+  end
+  env["rack.session"][:notebooks] = availables
 
   body data.to_json
 end

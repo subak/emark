@@ -5,12 +5,36 @@ require "fiber"
 require "eventmachine"
 require "logger"
 require "digest/md5"
-require "simplecov"
-SimpleCov.start do
-  add_filter "vender/bundle/"
-  add_filter "lib/Evernote/"
+require "nokogiri"
+require "rack/test"
+
+before do
+  logger = Logger.new(STDOUT)
+  logger.level = config.logger_level
+  env["rack.logger"] = logger
 end
 
+ActiveRecord::Base.clear_all_connections!
+ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
+ActiveRecord::Base.establish_connection config.environment
+Table.engine = ActiveRecord::Base
+
+set :db, ActiveRecord::Base.connection.raw_connection
+set :db_session, Table.new(:session)
+
+helpers do
+  def db.session
+    settings.db_session
+  end
+
+  def db.blog
+    settings.db_blog
+  end
+
+  def db
+    settings.db
+  end
+end
 
 module Rack
   module Test
@@ -52,6 +76,33 @@ module Helpers
       end
       @result
     end
+  end
+
+  def app
+    Helpers::RunLoop.new(Sinatra::Application)
+  end
+
+  def db
+    ActiveRecord::Base.connection.raw_connection
+  end
+
+  db = db
+
+  def db.session
+    Table.new(:session)
+  end
+
+  def db.blog
+    Table.new(:blog)
+  end
+
+  def admin_url path
+    URI::Generic.
+      build(
+      scheme: config.admin_protocol,
+      host:   config.admin_host,
+      port:   config.admin_port,
+      path:   path).to_s
   end
 
   def sync &block
