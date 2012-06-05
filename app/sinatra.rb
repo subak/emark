@@ -35,6 +35,15 @@ configure do
   set :db, ActiveRecord::Base.connection.raw_connection
   set :db_session, Table.new(:session)
   set :db_blog,    Table.new(:blog)
+
+  settings.db.busy_timeout(0)
+  settings.db.busy_handler do
+    fb = Fiber.current
+    EM.add_timer do
+      fb.resume true
+    end
+    Fiber.yield
+  end
 end
 
 helpers do
@@ -73,9 +82,7 @@ before do
     select = db.session.project(SqlLiteral.new "*")
     select.where(db.session[:sid].eq sid)
     select.where(db.session[:expires].gt Time.now.to_i)
-    query select.to_sql do |sql|
-      @session = db.get_first_row sql
-    end
+    @session = db.get_first_row select.to_sql
 
     if @session.!
       response.delete_cookie:sid
@@ -116,9 +123,7 @@ get "/" do
 
     select = db.session.project db.session[:user_id]
     select.where(db.session[:user_id].eq user.id)
-    res = query select.to_sql do |sql|
-      db.get_first_value sql
-    end
+    res = db.get_first_value select.to_sql
 
     sid     = Digest::MD5.new.update(Time.now.to_f.to_s).to_s
     expires = (accessToken.params[:edam_expires].to_i/1000).to_i
@@ -145,9 +150,7 @@ get "/" do
         insert
       end
 
-    query manager.to_sql do |sql|
-      db.execute sql
-    end
+    db.execute manager.to_sql
 
     env["rack.session"][:request_token] = nil
     response.set_cookie:sid, value: sid, expires: Time.at(expires)
@@ -191,10 +194,9 @@ get "/dashboard" do
   blogs = []
   select = db.blog.project(SqlLiteral.new "*")
   select.where(db.blog[:user_id].eq @session[:user_id])
-  query select.to_sql do |sql|
-    db.execute sql do |row|
-      blogs << row
-    end
+
+  db.execute select.to_sql do |row|
+    blogs << row
   end
 
   body({blogs: blogs}.to_json)
@@ -214,10 +216,9 @@ get "/open" do
   opend_books = []
   select = db.blog.project(db.blog[:notebook])
   select.where(db.blog[:user_id].eq(@session[:user_id]))
-  query select.to_sql do |sql|
-    db.execute sql do |row|
-      opend_books << row[:notebook]
-    end
+
+  db.execute select.to_sql do |row|
+    opend_books << row[:notebook]
   end
 
   data = {}
@@ -252,9 +253,7 @@ get "/config/:blog_id" do |blog_id|
   select = db.blog.project(SqlLiteral.new "*")
   select.where(db.blog[:user_id].eq @session[:user_id])
   select.where(db.blog[:blog_id].eq blog_id)
-  row = query select.to_sql do |sql|
-    db.get_first_row sql
-  end
+  row = db.get_first_row select.to_sql
   raise Forbidden if row.!
 
   body row.to_json
@@ -265,9 +264,7 @@ end
 get "/check/blogid/:blog_id" do |blog_id|
   select = db.blog.project(db.blog[:blog_id])
   select.where(db.blog[:blog_id].eq blog_id)
-  check = query select.to_sql do |sql|
-    db.get_first_value sql
-  end
+  check = db.get_first_value select.to_sql
 
   body({available: check.!}.to_json)
 end
@@ -285,9 +282,7 @@ post "/open" do
   raise Forbidden if blog_id !~ /^(([0-9a-z]+[.-])+)?[0-9a-z]+$/
   select = db.blog.project(db.blog[:blog_id])
   select.where(db.blog[:blog_id].eq blog_id)
-  check = query select.to_sql do |sql|
-    db.get_first_value sql
-  end
+  check = db.get_first_value select.to_sql
   raise Forbidden if check
 
   insert = db.blog.insert_manager
@@ -297,9 +292,7 @@ post "/open" do
                   [db.blog[:title],   notebookName],
                   [db.blog[:author],  blog_id]
                 ])
-  query insert.to_sql do |sql|
-    db.execute sql
-  end
+  db.execute insert.to_sql
 
   sleep 3
   env["rack.session"][:notebooks] = nil
@@ -316,11 +309,9 @@ put '/config/:blog_id' do |blog_id|
                [db.blog[:title],  params["title"]],
                [db.blog[:author], params["author"]]
              ])
-  query update.to_sql do |sql|
-    db.transaction do
-      db.execute sql
-      raise Forbidden if (db.changes >= 1).!
-    end
+  db.transaction do
+    db.execute update.to_sql
+    raise Forbidden if (db.changes >= 1).!
   end
 
   sleep 3
@@ -333,12 +324,11 @@ delete "/close/:blog_id" do |blog_id|
   delete.from db.blog
   delete.where(db.blog[:user_id].eq @session[:user_id])
   delete.where(db.blog[:blog_id].eq blog_id)
-  query delete.to_sql do |sql|
-    db.transaction do
-      db.execute sql
-      raise Forbidden if (db.changes >= 1).!
-    end
+  db.transaction do
+    db.execute delete.to_sql
+    raise Forbidden if (db.changes >= 1).!
   end
+
 
   # publish.syncに削除済みフラグを付ける
   # syncはevernoteの写し
@@ -349,7 +339,6 @@ delete "/close/:blog_id" do |blog_id|
   # エイリアスを削除
   # ディレクトリごと削除
   path = File.join(config.public_blog, blog_id.slice(0, 2), blog_id)
-#  path = "%s/%s/%s" % [config.public_blog, blog_id.slice(0, 2), blog_id]
   FileUtils.remove_entry_secure(path) if File.exist?(path)
 
   sleep 1
@@ -358,30 +347,28 @@ end
 
 # 同期リクエスト
 put "/sync/:blogid" do |blogid|
-  raise Forbidden if @io.get_blog(blogid, @userId).!
+  # raise Forbidden if @io.get_blog(blogid, @userId).!
 
-  queued = query do
-    queued = false
-    @db.transaction do
-      @db.execute @ext.sql_http(:sync), blogid:blogid
-      queued = 0 != @db.changes
-    end
-    queued
-  end
+  # queued = query do
+  #   queued = false
+  #   @db.transaction do
+  #     @db.execute @ext.sql_http(:sync), blogid:blogid
+  #     queued = 0 != @db.changes
+  #   end
+  #   queued
+  # end
 
-  sleep 1
-  {queued: queued}.to_json
+  # sleep 1
+  # {queued: queued}.to_json
 end
 
 delete "/logout" do
   delete = DeleteManager.new Table.engine
   delete.from db.session
   delete.where(db.session[:user_id].eq @session[:user_id])
-  query delete.to_sql do |sql|
-    db.transaction do
-      db.execute sql
-      raise Forbidden if (db.changes >= 1).!
-    end
+  db.transaction do
+    db.execute delete.to_sql
+    raise Forbidden if (db.changes >= 1).!
   end
 
   config.site_href
@@ -396,31 +383,31 @@ def sleep wait
   Fiber.yield
 end
 
-def query *args, &block
-  logger.debug args[0]
+# def query *args, &block
+#   logger.debug args[0]
 
-  num = 0
-  fb = Fiber.current
-  tick = proc do
-    EM.next_tick do
-      begin
-        res = block.call *args
-      rescue SQLite3::BusyException, SQLite3::LockedException
-        num += 1
-        p "tick:#{num}"
-        tick.call
-      rescue Exception => e
-        fb.resume e
-      else
-        fb.resume res
-      end
-    end
-  end
-  tick.call
-  res = Fiber.yield
-  raise res if res.kind_of?(Exception)
-  res
-end
+#   num = 0
+#   fb = Fiber.current
+#   tick = proc do
+#     EM.next_tick do
+#       begin
+#         res = block.call *args
+#       rescue SQLite3::BusyException, SQLite3::LockedException
+#         num += 1
+#         p "tick:#{num}"
+#         tick.call
+#       rescue Exception => e
+#         fb.resume e
+#       else
+#         fb.resume res
+#       end
+#     end
+#   end
+#   tick.call
+#   res = Fiber.yield
+#   raise res if res.kind_of?(Exception)
+#   res
+# end
 
 def thread &block
   fb = Fiber.current
