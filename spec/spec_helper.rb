@@ -8,19 +8,21 @@ require "digest/md5"
 require "nokogiri"
 require "rack/test"
 
-before do
-  logger = Logger.new(STDOUT)
-  logger.level = config.logger_level
-  env["rack.logger"] = logger
-end
-
 ActiveRecord::Base.clear_all_connections!
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
 ActiveRecord::Base.establish_connection config.environment
 Table.engine = ActiveRecord::Base
 
-set :db, ActiveRecord::Base.connection.raw_connection
-set :db_session, Table.new(:session)
+configure do
+  set :db, ActiveRecord::Base.connection.raw_connection
+  settings.db.busy_handler do
+    fb = Fiber.current
+    EM.add_timer do
+      fb.resume true
+    end
+    Fiber.yield
+  end
+end
 
 helpers do
   def db.session
@@ -63,6 +65,18 @@ module Helpers
     end
 
     def call(env)
+      # fb = Fiber.current
+      # env["async.callback"] = proc do |result|
+      #   @result = result
+      #   EM.add_timer do
+      #     fb.resume @result
+      #   end
+      # end
+      # catch :async do
+      #   @app.call(env)
+      # end
+      # Fiber.yield
+
       EM.run do
         env["async.callback"] = proc do |result|
           @result = result
@@ -130,18 +144,31 @@ module Helpers
       end
       fb.resume
 
-      ender = proc do |fb|
-        EM.next_tick do
-          if fb.alive?
-            ender.call fb
-          else
-            EM.stop
-          end
-        end
+      EM.add_periodic_timer do
+        EM.stop if fb.alive?.!
       end
-      ender.call fb
     end
   end
+
+  # def sync &block
+  #   EM.run do
+  #     fb = Fiber.new do
+  #       block.call
+  #     end
+  #     fb.resume
+
+  #     ender = proc do |fb|
+  #       EM.next_tick do
+  #         if fb.alive?
+  #           ender.call fb
+  #         else
+  #           EM.stop
+  #         end
+  #       end
+  #     end
+  #     ender.call fb
+  #   end
+  # end
 
   SpecLogger = ::Logger.new(STDOUT)
   SpecLogger.level = config.logger_level

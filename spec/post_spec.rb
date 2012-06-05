@@ -8,6 +8,18 @@ require "./spec/spec_helper.rb"
 RSpec.configure do
   include Helpers
   include Rack::Test::Methods
+
+  def sync &block
+    EM.run do
+      fb =Fiber.new do
+        block.call
+      end
+      fb.resume
+      EM.add_periodic_timer do
+        EM.stop if fb.alive?.!
+      end
+    end
+  end
 end
 
 describe "put /config" do
@@ -119,7 +131,7 @@ describe "delete blog" do
         path = File.join(config.public_blog, @bid.slice(0, 2), @bid, "test.html")
         FileUtils.mkdir_p File.dirname(path)
         FileUtils.touch path
-        FileUtils.symlink path, "#{path}.link"
+        FileUtils.symlink path, "#{path}.link" if File.exist?("#{path}.link").!
 
         delete("/close/#{@bid}", {}, {
                  "HTTP_COOKIE" => @http_cookie

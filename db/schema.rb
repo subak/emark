@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120604074259) do
+ActiveRecord::Schema.define(:version => 20120605085029) do
 
   create_table "blog", :force => true do |t|
     t.text    "blog_id",  :default => "", :null => false
@@ -23,6 +23,13 @@ ActiveRecord::Schema.define(:version => 20120604074259) do
   end
 
   add_index "blog", ["blog_id"], :name => "index_blog_on_blog_id", :unique => true
+
+  create_table "blog_q", :force => true do |t|
+    t.text  "bid"
+    t.float "queued"
+  end
+
+  add_index "blog_q", ["bid"], :name => "index_blog_q_on_bid", :unique => true
 
   create_table "session", :force => true do |t|
     t.integer "user_id",       :default => 0, :null => false
