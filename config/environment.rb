@@ -6,6 +6,7 @@ include Emark
 dir = File.expand_path "."
 config.root   = dir
 config.public = File.join dir, "public"
+config.public_blog   = File.join(config.public, "_")
 #config.evernote_host = "sandbox.evernote.com"
 config.evernote_host = "www.evernote.com"
 config.evernote_site = "https://#{config.evernote_host}"

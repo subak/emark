@@ -302,6 +302,7 @@ post "/open" do
   end
 
   sleep 3
+  env["rack.session"][:notebooks] = nil
 
   200
 end
@@ -327,22 +328,29 @@ put '/config/:blog_id' do |blog_id|
 end
 
 # ブログを削除
-delete "/close/:blogid" do |blogid|
-  query do
-    @db.transaction do
-      @db.execute @ext.sql_http(:deleteBlog), blogid, @userId
-      raise Forbidden if 0 == @db.changes
+delete "/close/:blog_id" do |blog_id|
+  delete = DeleteManager.new Table.engine
+  delete.from db.blog
+  delete.where(db.blog[:user_id].eq @session[:user_id])
+  delete.where(db.blog[:blog_id].eq blog_id)
+  query delete.to_sql do |sql|
+    db.transaction do
+      db.execute sql
+      raise Forbidden if (db.changes >= 1).!
     end
   end
 
   # publish.syncに削除済みフラグを付ける
-  query do
-    @db.execute @ext.sql_http(:close), blogid
-  end
+  # syncはevernoteの写し
+  # query do
+  #   @db.execute @ext.sql_http(:close), blogid
+  # end
 
   # エイリアスを削除
-  path = "%s/%s/%s" % [PUBLIC_ROOT, blogid.slice(0, 2), blogid]
-  FileUtils.remove_entry_secure path
+  # ディレクトリごと削除
+  path = File.join(config.public_blog, blog_id.slice(0, 2), blog_id)
+#  path = "%s/%s/%s" % [config.public_blog, blog_id.slice(0, 2), blog_id]
+  FileUtils.remove_entry_secure(path) if File.exist?(path)
 
   sleep 1
   200
@@ -366,8 +374,17 @@ put "/sync/:blogid" do |blogid|
 end
 
 delete "/logout" do
-  @io.delete_sid
-  "http://#{SERVICE_HOST}"
+  delete = DeleteManager.new Table.engine
+  delete.from db.session
+  delete.where(db.session[:user_id].eq @session[:user_id])
+  query delete.to_sql do |sql|
+    db.transaction do
+      db.execute sql
+      raise Forbidden if (db.changes >= 1).!
+    end
+  end
+
+  config.site_href
 end
 
 def sleep wait
@@ -421,4 +438,3 @@ def thread &block
   raise e if e.kind_of? Exception
   e
 end
-
