@@ -70,8 +70,8 @@ describe Emark::Publish::Blog do
         @bid = "test.example.com"
         insert = db.blog.insert_manager
         insert.insert([
-                        [db.blog[:user_id], @session[:user_id]],
-                        [db.blog[:blog_id], @bid]
+                        [db.blog[:uid], @session[:uid]],
+                        [db.blog[:bid], @bid]
                       ])
         db.execute insert.to_sql
       end

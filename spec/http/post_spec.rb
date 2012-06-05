@@ -54,8 +54,8 @@ describe "put /config" do
         sync do
           insert = db.blog.insert_manager
           insert.insert([
-                          [db.blog[:user_id], @session[:user_id]],
-                          [db.blog[:blog_id], "test.example.com"]
+                          [db.blog[:uid], @session[:uid]],
+                          [db.blog[:bid], "test.example.com"]
                         ])
           db.execute insert.to_sql
         end
@@ -130,8 +130,8 @@ describe %!delete "/close/:bid"! do
           @bid = "test.example.com"
           insert = db.blog.insert_manager
           insert.insert([
-                          [db.blog[:user_id], @session[:user_id]],
-                          [db.blog[:blog_id], @bid]
+                          [db.blog[:uid], @session[:uid]],
+                          [db.blog[:bid], @bid]
                         ])
           db.execute insert.to_sql
         end
@@ -177,7 +177,7 @@ describe "logout" do
 
       insert = db.session.insert_manager
       insert.insert([
-                      [db.session[:user_id],   @session[:user_id]],
+                      [db.session[:uid],   @session[:uid]],
                       [db.session[:shard],     @session[:shard]],
                       [db.session[:authtoken], @session[:authtoken]],
                       [db.session[:expires],   @session[:expires]],
@@ -204,8 +204,8 @@ describe %!put "/sync/:bid"! do
 
       insert = db.blog.insert_manager
       insert.insert([
-                      [db.blog[:user_id], @session[:user_id]],
-                      [db.blog[:blog_id], @bid]
+                      [db.blog[:uid], @session[:uid]],
+                      [db.blog[:bid], @bid]
                     ])
       db.execute insert.to_sql
     end

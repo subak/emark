@@ -134,8 +134,8 @@ describe "ノートブック公開" do
             @guids.each do |guid|
               insert = db.blog.insert_manager
               insert.insert [
-                     [db.blog[:user_id], @session[:user_id]],
-                     [db.blog[:blog_id], Digest::MD5.new.update(Time.now.to_f.to_s).to_s],
+                     [db.blog[:uid], @session[:uid]],
+                     [db.blog[:bid], Digest::MD5.new.update(Time.now.to_f.to_s).to_s],
                      [db.blog[:notebook], guid]]
               db.execute insert.to_sql
             end

@@ -126,8 +126,8 @@ get "/" do
       user = userStore.getUser(accessToken.params[:oauth_token])
     end
 
-    select = db.session.project db.session[:user_id]
-    select.where(db.session[:user_id].eq user.id)
+    select = db.session.project db.session[:uid]
+    select.where(db.session[:uid].eq user.id)
     res = db.get_first_value select.to_sql
 
     sid     = Digest::MD5.new.update(Time.now.to_f.to_s).to_s
@@ -146,7 +146,7 @@ get "/" do
         insert = InsertManager.new Table.engine
         insert.into db.session
         insert.insert([
-                        [db.session[:user_id],   user.id],
+                        [db.session[:uid],   user.id],
                         [db.session[:shard],     user.shardId],
                         [db.session[:authtoken], accessToken.params[:oauth_token]],
                         [db.session[:expires],   expires],
@@ -198,7 +198,7 @@ get "/dashboard" do
 
   blogs = []
   select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:user_id].eq @session[:user_id])
+  select.where(db.blog[:uid].eq @session[:uid])
 
   db.execute select.to_sql do |row|
     blogs << row
@@ -220,7 +220,7 @@ get "/open" do
   # 公開済みノートブック
   opend_books = []
   select = db.blog.project(db.blog[:notebook])
-  select.where(db.blog[:user_id].eq(@session[:user_id]))
+  select.where(db.blog[:uid].eq(@session[:uid]))
 
   db.execute select.to_sql do |row|
     opend_books << row[:notebook]
@@ -256,8 +256,8 @@ get "/config/:blog_id" do |blog_id|
   sleep 1
 
   select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:user_id].eq @session[:user_id])
-  select.where(db.blog[:blog_id].eq blog_id)
+  select.where(db.blog[:uid].eq @session[:uid])
+  select.where(db.blog[:bid].eq blog_id)
   row = db.get_first_row select.to_sql
   raise Forbidden if row.!
 
@@ -267,8 +267,8 @@ end
 ##
 # blogidのチェック
 get "/check/blogid/:blog_id" do |blog_id|
-  select = db.blog.project(db.blog[:blog_id])
-  select.where(db.blog[:blog_id].eq blog_id)
+  select = db.blog.project(db.blog[:bid])
+  select.where(db.blog[:bid].eq blog_id)
   check = db.get_first_value select.to_sql
 
   body({available: check.!}.to_json)
@@ -285,15 +285,15 @@ post "/open" do
   raise Forbidden if params["subdomain"].!
   blog_id      = params["subdomain"] + '.' + params["domain"]
   raise Forbidden if blog_id !~ /^(([0-9a-z]+[.-])+)?[0-9a-z]+$/
-  select = db.blog.project(db.blog[:blog_id])
-  select.where(db.blog[:blog_id].eq blog_id)
+  select = db.blog.project(db.blog[:bid])
+  select.where(db.blog[:bid].eq blog_id)
   check = db.get_first_value select.to_sql
   raise Forbidden if check
 
   insert = db.blog.insert_manager
   insert.insert([
-                  [db.blog[:user_id], @session[:user_id]],
-                  [db.blog[:blog_id], blog_id],
+                  [db.blog[:uid], @session[:uid]],
+                  [db.blog[:bid], blog_id],
                   [db.blog[:title],   notebookName],
                   [db.blog[:author],  blog_id]
                 ])
@@ -308,8 +308,8 @@ end
 put '/config/:blog_id' do |blog_id|
   update = UpdateManager.new Table.engine
   update.table db.blog
-  update.where(db.blog[:user_id].eq @session[:user_id])
-  update.where(db.blog[:blog_id].eq blog_id)
+  update.where(db.blog[:uid].eq @session[:uid])
+  update.where(db.blog[:bid].eq blog_id)
   update.set([
                [db.blog[:title],  params["title"]],
                [db.blog[:author], params["author"]]
@@ -327,8 +327,8 @@ end
 delete "/close/:blog_id" do |blog_id|
   delete = DeleteManager.new Table.engine
   delete.from db.blog
-  delete.where(db.blog[:user_id].eq @session[:user_id])
-  delete.where(db.blog[:blog_id].eq blog_id)
+  delete.where(db.blog[:uid].eq @session[:uid])
+  delete.where(db.blog[:bid].eq blog_id)
   db.transaction do
     db.execute delete.to_sql
     raise Forbidden if (db.changes >= 1).!
@@ -351,9 +351,9 @@ end
 
 # 同期リクエスト
 put "/sync/:bid" do |bid|
-  select = db.blog.project(db.blog[:blog_id])
-  select.where(db.blog[:user_id].eq @session[:user_id])
-  select.where(db.blog[:blog_id].eq bid)
+  select = db.blog.project(db.blog[:bid])
+  select.where(db.blog[:uid].eq @session[:uid])
+  select.where(db.blog[:bid].eq bid)
   check = db.get_first_value select.to_sql
   raise Forbidden if check.!
 
@@ -394,7 +394,7 @@ end
 delete "/logout" do
   delete = DeleteManager.new Table.engine
   delete.from db.session
-  delete.where(db.session[:user_id].eq @session[:user_id])
+  delete.where(db.session[:uid].eq @session[:uid])
   db.transaction do
     db.execute delete.to_sql
     raise Forbidden if (db.changes >= 1).!

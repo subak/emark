@@ -41,8 +41,8 @@ module Emark
 
       def step_2 bid
         select = db.session.project(db.session[:authtoken], db.session[:shard], db.blog[:notebook])
-        select.join(db.blog).on(db.session[:user_id].eq db.blog[:user_id])
-        select.where(db.blog[:blog_id].eq bid)
+        select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])
+        select.where(db.blog[:bid].eq bid)
         select.take 1
 
         row = db.get_first_row select.to_sql

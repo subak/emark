@@ -76,7 +76,7 @@ module Helper
 
   def get_session
     select = db.session.project(SqlLiteral.new "*")
-    select.where(db.session[:user_id].eq 25512727)
+    select.where(db.session[:uid].eq 25512727)
     @session = db.get_first_row select.to_sql
     raise "session error" if @session.!
     @http_cookie = "sid=#{@session[:sid]}"
