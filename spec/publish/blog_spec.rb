@@ -10,6 +10,7 @@ end
 describe Emark::Publish::Blog do
   before:all do
     @blog = Emark::Publish::Blog.new db, logger
+    @result = {}
   end
 
   describe "step_1" do
@@ -72,7 +73,6 @@ describe Emark::Publish::Blog do
                         [db.blog[:user_id], @session[:user_id]],
                         [db.blog[:blog_id], @bid]
                       ])
-        puts insert.to_sql
         db.execute insert.to_sql
       end
     end
@@ -90,5 +90,52 @@ describe Emark::Publish::Blog do
         @blog.step_2(@bid)[:authtoken].should == @session[:authtoken]
       end
     end
+  end
+
+  describe "step_3" do
+    before:all do
+      sync do
+        get_session
+
+        noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{@session[:shard]}")
+        noteStoreProtocol =  Thrift::BinaryProtocol.new(noteStoreTransport)
+        noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
+        notebooks = noteStore.listNotebooks(@session[:authtoken])
+
+        @guid = notebooks.first.guid
+      end
+    end
+
+    it "不正なauthtoken" do
+      sync do
+        @blog.step_3("authtoken", @session[:shard], @guid).kind_of?(Evernote::EDAM::NoteStore::NotesMetadataList).should be_true
+      end
+      pending "不可解な結果"
+    end
+
+    it "不正なnotebook" do
+      sync do
+        proc do
+          @blog.step_3 @session[:authtoken], @shard, "notebook"
+        end.should raise_error
+      end
+    end
+
+    it "ノートがない" do
+      pending "テストできない"
+      # ノートブックを増やすか
+    end
+
+    it "ok" do
+      sync do
+        result = @blog.step_3("authtoken", @session[:shard], @guid)
+        result.kind_of?(Evernote::EDAM::NoteStore::NotesMetadataList).should be_true
+        @result[:step_3] = result
+      end
+    end
+  end
+
+  describe "step_4" do
+    pending "これから"
   end
 end

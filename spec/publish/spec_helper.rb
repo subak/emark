@@ -11,6 +11,13 @@ require "arel"
 
 require "./lib/override/sqlite3"
 require "./config/environment"
+include Emark
+$: << "./lib/Evernote/EDAM"
+require 'note_store'
+require 'limits_constants'
+require "user_store"
+require "user_store_constants.rb"
+require "errors_types.rb"
 
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
 ActiveRecord::Base.establish_connection :spec
