@@ -3,7 +3,7 @@
 require "./app/sinatra"
 config.environment  = :spec
 config.logger_level = Logger::INFO
-require "./spec/spec_helper.rb"
+require "./spec/http/spec_helper.rb"
 
 RSpec.configure do
   include Helpers
