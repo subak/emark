@@ -38,7 +38,6 @@ configure do
   set :db_blog,    Table.new(:blog)
   set :db_blog_q,  Table.new(:blog_q)
 
-  settings.db.busy_timeout(0)
   settings.db.busy_handler do
     fb = Fiber.current
     EM.add_timer do
