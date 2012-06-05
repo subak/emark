@@ -8,7 +8,7 @@ task :spec => :init
 
 desc "init"
 task :init do
-  sh "bundle exec rake db:migrate RAILS_ENV=spec"
+  sh "bundle exec rake db:migrate DB=spec"
 end
 
 begin

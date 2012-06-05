@@ -20,7 +20,8 @@ EM.threadpool_size = 100
 use Rack::FiberPool , :size => 200
 use Rack::Session::Cookie, {
   :http_only => true,
-  :secure => true}
+  :secure    => true
+}
 
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
 ActiveRecord::Base.establish_connection config.environment
@@ -35,6 +36,7 @@ configure do
   set :db, ActiveRecord::Base.connection.raw_connection
   set :db_session, Table.new(:session)
   set :db_blog,    Table.new(:blog)
+  set :db_blog_q,  Table.new(:blog_q)
 
   settings.db.busy_timeout(0)
   settings.db.busy_handler do
@@ -53,6 +55,10 @@ helpers do
 
   def db.blog
     settings.db_blog
+  end
+
+  def db.blog_q
+    settings.db_blog_q
   end
 
   def db
@@ -329,7 +335,6 @@ delete "/close/:blog_id" do |blog_id|
     raise Forbidden if (db.changes >= 1).!
   end
 
-
   # publish.syncに削除済みフラグを付ける
   # syncはevernoteの写し
   # query do
@@ -346,7 +351,32 @@ delete "/close/:blog_id" do |blog_id|
 end
 
 # 同期リクエスト
-put "/sync/:blogid" do |blogid|
+put "/sync/:bid" do |bid|
+  select = db.blog.project(db.blog[:blog_id])
+  select.where(db.blog[:user_id].eq @session[:user_id])
+  select.where(db.blog[:blog_id].eq bid)
+  check = db.get_first_value select.to_sql
+  raise Forbidden if check.!
+
+  select = db.blog_q.project(db.blog_q[:bid])
+  select.where(db.blog_q[:bid].eq bid)
+  check = db.get_first_value select.to_sql
+  queued = false
+  if check.!
+    insert = db.blog_q.insert_manager
+    insert.insert([
+                    [db.blog_q[:bid],    bid],
+                    [db.blog_q[:queued], Time.now.to_f]
+                  ])
+    db.transaction do
+      db.execute insert.to_sql
+      queued = db.changes >= 1
+    end
+  end
+
+  sleep 1
+  {queued: queued}.to_json
+
   # raise Forbidden if @io.get_blog(blogid, @userId).!
 
   # queued = query do
@@ -382,32 +412,6 @@ def sleep wait
   end
   Fiber.yield
 end
-
-# def query *args, &block
-#   logger.debug args[0]
-
-#   num = 0
-#   fb = Fiber.current
-#   tick = proc do
-#     EM.next_tick do
-#       begin
-#         res = block.call *args
-#       rescue SQLite3::BusyException, SQLite3::LockedException
-#         num += 1
-#         p "tick:#{num}"
-#         tick.call
-#       rescue Exception => e
-#         fb.resume e
-#       else
-#         fb.resume res
-#       end
-#     end
-#   end
-#   tick.call
-#   res = Fiber.yield
-#   raise res if res.kind_of?(Exception)
-#   res
-# end
 
 def thread &block
   fb = Fiber.current

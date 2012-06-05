@@ -12,14 +12,16 @@ end
 
 describe "request_token" do
   before:all do
-    url = URI::Generic.
-      build(
-      scheme: config.admin_protocol,
-      host:   config.admin_host,
-      port:   config.admin_port,
-      path:   "/").to_s
+    sync do
+      url = URI::Generic.
+        build(
+        scheme: config.admin_protocol,
+        host:   config.admin_host,
+        port:   config.admin_port,
+        path:   "/").to_s
 
-    get(url)
+      get(url)
+    end
   end
 
   it "bodyにcallbackurlを返す" do
@@ -33,52 +35,59 @@ describe "request_token" do
 end
 
 describe "access_token" do
-
   context "fail" do
     before do
-      url = URI::Generic.
-        build(
-        scheme: config.admin_protocol,
-        host:   config.admin_host,
-        port:   config.admin_port,
-        path:   "/").to_s
+      sync do
+        url = URI::Generic.
+          build(
+          scheme: config.admin_protocol,
+          host:   config.admin_host,
+          port:   config.admin_port,
+          path:   "/").to_s
 
-      clear_cookies
-      get(url)
-      @request_url = last_response.body
+        clear_cookies
+        get(url)
+        @request_url = last_response.body
+      end
     end
 
     it "sessionの情報を持たない時は403" do
-      clear_cookies
-      get(access_url(@request_url))
+      sync do
+        clear_cookies
+        get(access_url(@request_url))
 
-      last_response.forbidden?.should be_true
+        last_response.forbidden?.should be_true
+      end
     end
   end
 
   describe "success" do
     before:all do
-      delete = DeleteManager.new Table.engine
-      delete.from db.session
-      db.execute delete.to_sql
+      sync do
+        delete = DeleteManager.new Table.engine
+        delete.from db.session
+        db.execute delete.to_sql
+      end
     end
 
     2.times do |time|
       label = (0 == time) ? "insert" : "update"
       context label do
         before:all do
-          @url = URI::Generic.
-            build(
-            scheme: config.admin_protocol,
-            host:   config.admin_host,
-            port:   config.admin_port,
-            path:   "/").to_s
+          sync do
+            @url = URI::Generic.
+              build(
+              scheme: config.admin_protocol,
+              host:   config.admin_host,
+              port:   config.admin_port,
+              path:   "/").to_s
 
-          clear_cookies
-          get(@url)
-          request_url = last_response.body
+            clear_cookies
+            get(@url)
+            request_url = last_response.body
 
-          get(access_url(request_url))
+            get(access_url(request_url))
+          end
         end
 
         it "response.bodyは/を返す" do
@@ -96,8 +105,10 @@ describe "access_token" do
         end
 
         it "dashboardへリダイレクトされること" do
-          get(@url)
-          last_response.body.should == "/dashboard"
+          sync do
+            get(@url)
+            last_response.body.should == "/dashboard"
+          end
         end
       end
     end

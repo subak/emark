@@ -33,9 +33,24 @@ helpers do
     settings.db_blog
   end
 
+  def db.blog_q
+    settings.db_blog_q
+  end
+
   def db
     settings.db
   end
+end
+
+##
+# 待ち時間無し
+def sleep wait
+  fb = Fiber.current
+  logger.debug "sleep wait:#{wait}"
+  EM.add_timer do
+    fb.resume
+  end
+  Fiber.yield
 end
 
 module Rack
@@ -65,30 +80,17 @@ module Helpers
     end
 
     def call(env)
-      # fb = Fiber.current
-      # env["async.callback"] = proc do |result|
-      #   @result = result
-      #   EM.add_timer do
-      #     fb.resume @result
-      #   end
-      # end
-      # catch :async do
-      #   @app.call(env)
-      # end
-      # Fiber.yield
-
-      EM.run do
-        env["async.callback"] = proc do |result|
-          @result = result
-          EM.stop
-        end
-        catch :async do
-          @app.call(env) do
-            p "hugahoge"
-          end
+      fb = Fiber.current
+      env["async.callback"] = proc do |result|
+        @result = result
+        EM.add_timer do
+          fb.resume @result
         end
       end
-      @result
+      catch :async do
+        @app.call(env)
+      end
+      Fiber.yield
     end
   end
 
@@ -110,6 +112,10 @@ module Helpers
     Table.new(:blog)
   end
 
+  def db.blog_q
+    Table.new(:blog_q)
+  end
+
   def admin_url path
     URI::Generic.
       build(
@@ -128,12 +134,12 @@ module Helpers
     select.where(db.session[:user_id].eq 25512727)
     @session = db.get_first_row select.to_sql
     raise "session error" if @session.!
+    @http_cookie = "sid=#{@session[:sid]}"
   end
 
   def delete_blog
     delete = DeleteManager.new Table.engine
     delete.from db.blog
-#    delete.where(db.blog[:user_id].eq @session[:user_id])
     db.execute delete.to_sql
   end
 
@@ -149,26 +155,6 @@ module Helpers
       end
     end
   end
-
-  # def sync &block
-  #   EM.run do
-  #     fb = Fiber.new do
-  #       block.call
-  #     end
-  #     fb.resume
-
-  #     ender = proc do |fb|
-  #       EM.next_tick do
-  #         if fb.alive?
-  #           ender.call fb
-  #         else
-  #           EM.stop
-  #         end
-  #       end
-  #     end
-  #     ender.call fb
-  #   end
-  # end
 
   SpecLogger = ::Logger.new(STDOUT)
   SpecLogger.level = config.logger_level
