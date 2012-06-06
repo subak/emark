@@ -37,6 +37,7 @@ configure do
   set :db_session, Table.new(:session)
   set :db_blog,    Table.new(:blog)
   set :db_blog_q,  Table.new(:blog_q)
+  set :db_sync,    Table.new(:sync)
 
   settings.db.busy_handler do
     fb = Fiber.current
@@ -58,6 +59,10 @@ helpers do
 
   def db.blog_q
     settings.db_blog_q
+  end
+
+  def db.sync
+    settings.db_sync
   end
 
   def db
@@ -324,25 +329,28 @@ put '/config/:blog_id' do |blog_id|
 end
 
 # ブログを削除
-delete "/close/:blog_id" do |blog_id|
+delete "/close/:bid" do |bid|
   delete = DeleteManager.new Table.engine
   delete.from db.blog
   delete.where(db.blog[:uid].eq @session[:uid])
-  delete.where(db.blog[:bid].eq blog_id)
+  delete.where(db.blog[:bid].eq bid)
   db.transaction do
     db.execute delete.to_sql
     raise Forbidden if (db.changes >= 1).!
   end
 
   # publish.syncに削除済みフラグを付ける
-  # syncはevernoteの写し
-  # query do
-  #   @db.execute @ext.sql_http(:close), blogid
-  # end
+  update = UpdateManager.new Table.engine
+  update.table db.sync
+  update.set([
+               [db.sync[:deleted], 1]
+             ])
+  update.where(db.sync[:bid].eq bid)
+  db.execute update.to_sql
 
   # エイリアスを削除
   # ディレクトリごと削除
-  path = File.join(config.public_blog, blog_id.slice(0, 2), blog_id)
+  path = File.join(config.public_blog, bid.slice(0, 2), bid)
   FileUtils.remove_entry_secure(path) if File.exist?(path)
 
   sleep 1
@@ -375,20 +383,6 @@ put "/sync/:bid" do |bid|
 
   sleep 1
   {queued: queued}.to_json
-
-  # raise Forbidden if @io.get_blog(blogid, @userId).!
-
-  # queued = query do
-  #   queued = false
-  #   @db.transaction do
-  #     @db.execute @ext.sql_http(:sync), blogid:blogid
-  #     queued = 0 != @db.changes
-  #   end
-  #   queued
-  # end
-
-  # sleep 1
-  # {queued: queued}.to_json
 end
 
 delete "/logout" do

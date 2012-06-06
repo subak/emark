@@ -37,6 +37,10 @@ helpers do
     settings.db_blog_q
   end
 
+  def db.sync
+    settings.db_sync
+  end
+
   def db
     settings.db
   end
@@ -140,6 +144,12 @@ module Helpers
   def delete_blog
     delete = DeleteManager.new Table.engine
     delete.from db.blog
+    db.execute delete.to_sql
+  end
+
+  def delete_sync
+    delete = DeleteManager.new Table.engine
+    delete.from db.sync
     db.execute delete.to_sql
   end
 

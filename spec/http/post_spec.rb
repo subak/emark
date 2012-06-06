@@ -153,7 +153,38 @@ describe %!delete "/close/:bid"! do
       end
 
       it "publish.syncに削除済みフラグを付ける" do
-        pending "db待ち"
+        sync do
+          delete_sync
+
+          insert = db.sync.insert_manager
+          insert.insert([
+                          [db.sync[:note_guid], "same_bid"],
+                          [db.sync[:bid],       @bid],
+                        ])
+          db.execute insert.to_sql
+
+          insert = db.sync.insert_manager
+          insert.insert([
+                          [db.sync[:note_guid], "diff_bid"],
+                          [db.sync[:bid],       "hoge.example.com"],
+                        ])
+          db.execute insert.to_sql
+
+
+          delete("/close/#{@bid}", {}, {
+                   "HTTP_COOKIE" => @http_cookie
+                 })
+          last_response.ok?.should be_true
+
+          select = db.sync.project(db.sync[:deleted])
+          select.where(db.sync[:note_guid].eq "same_bid")
+          db.get_first_value(select.to_sql).should == 1
+
+          select = db.sync.project(db.sync[:deleted])
+          select.where(db.sync[:note_guid].eq "diff_bid")
+          db.get_first_value(select.to_sql).should == 0
+
+        end
       end
     end
   end

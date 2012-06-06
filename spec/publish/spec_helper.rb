@@ -117,4 +117,8 @@ module Helper
     delete.from db.meta_q
     db.execute delete.to_sql
   end
+
+  def delete_sync
+
+  end
 end
