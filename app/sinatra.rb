@@ -3,7 +3,7 @@
 require "pp"
 require "digest/md5"
 require "json"
-Bundler.require :default
+Bundler.require :default, :http
 require "./lib/override/sqlite3"
 
 require "./config/environment"

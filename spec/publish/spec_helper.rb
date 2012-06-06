@@ -1,16 +1,12 @@
 # -*- coding: utf-8; -*-
 
+require "fiber"
 require "pp"
 require "logger"
-require "eventmachine"
-require "sqlite3"
-require "active_record"
-require "active_support"
 require "yaml"
-require "arel"
+require "bundler"
+Bundler.require :default, :publish
 
-require "./lib/override/sqlite3"
-require "./config/environment"
 include Emark
 $: << "./lib/Evernote/EDAM"
 require 'note_store'
@@ -18,6 +14,9 @@ require 'limits_constants'
 require "user_store"
 require "user_store_constants.rb"
 require "errors_types.rb"
+
+require "./lib/override/sqlite3"
+require "./config/environment"
 
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
 ActiveRecord::Base.establish_connection :spec
