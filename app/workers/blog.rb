@@ -6,7 +6,7 @@ module Emark
     class Fatal < Exception; end
 
     class Blog
-      attr_accessor :db, :logger
+      attr_accessor :db, :logger, :bid
 
       def initialize db, logger
         @db     = db
@@ -19,6 +19,17 @@ module Emark
         notes = thread do
           step_3 row[:authtoken], row[:shard], row[:notebook]
         end
+
+        sync_notes = step_4 notes
+
+        enqueues = step_5 sync_notes
+        step_6 sync_notes
+
+
+        @logger.info "Emark::Publish::Blog => #{enqueues} entries enqueued."
+
+        @bid  = nil
+        enqueues
       end
 
       def step_1
@@ -119,18 +130,54 @@ module Emark
 
       ##
       # キューを入れる
-      def step_5 do syncNotes
+      def step_5 sync_notes
+        result = 0
+        return result if sync_notes.empty?
+
         # entryテーブルにキューを入れる
-        syncNotes.each do |guid, updated|
-          @db.execute(@ext.sql_publish(:entry_enqueue),
-              guid, updated, @blogid)
+        db.transaction do
+          sync_notes.each do |guid, updated|
+            insert = db.entry_q.insert_manager
+            insert.insert([
+                            [db.entry_q[:note_guid], guid],
+                            [db.entry_q[:updated],   updated],
+                            [db.entry_q[:bid],       @bid],
+                            [db.entry_q[:queued],    Time.now.to_f]
+                          ])
+            begin
+              db.execute insert.to_sql
+            rescue SQLite3::ConstraintException => e
+              logger.warn "#{e.class}: #{e.message} #{__FILE__}:#{__LINE__}"
+            else
+              result += 1
+            end
+          end
         end
 
-        # metaテーブルにキューを入れる
-        ret if syncNotes.empty?
-        @db.execute @ext.sql_publish(:meta_enqueue), @blogid
-        @logger.info "Emark::Publish::Blog => #{syncNotes.size} entries enqueued."
+        result
       end
+
+      def step_6 sync_notes
+        result = false
+        return result if sync_notes.empty?
+
+        # metaテーブルにキューを入れる
+        insert = db.meta_q.insert_manager
+        insert.insert([
+                        [db.meta_q[:bid],    @bid],
+                        [db.meta_q[:queued], Time.now.to_f]
+                      ])
+        begin
+          db.execute insert.to_sql
+        rescue SQLite3::ConstraintException => e
+          logger.warn "#{e.class}: #{e.message} #{__FILE__}:#{__LINE__}"
+        else
+          result = true
+        end
+
+        result
+      end
+
     end
   end
 end

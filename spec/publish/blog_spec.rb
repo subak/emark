@@ -204,16 +204,115 @@ describe Emark::Publish::Blog do
 
   describe "step_5" do
     before:all do
-      delete = DeleteManager.new Table.engine
-      delete.from db.entry_q
-      db.execute delete.to_sql
-
-      delete = DeleteManager.new Table.engine
-      delete.from db.meta_q
-      db.execute delete.to_sql
+      delete_entry_q
+      @blog.bid = "test.example.com"
     end
 
-    
+    it "空" do
+      @blog.step_5({}).should == 0
+    end
 
+    it "ok" do
+      @blog.step_5({
+                     "guid1" => Time.now.to_f,
+                   }).should == 1
+
+      select = db.entry_q.project(db.entry_q[:note_guid])
+      select.where(db.entry_q[:bid].eq @blog.bid)
+      db.get_first_value(select.to_sql).should == "guid1"
+    end
+
+    it "重複" do
+      @blog.step_5({
+                     "guid1" => Time.now.to_f,
+                   }).should == 0
+    end
+  end
+
+  describe "step_6" do
+    before:all do
+      delete_meta_q
+      @blog.bid = "test.example.com"
+    end
+
+    it "空" do
+      @blog.step_6({}).should be_false
+    end
+
+    it "ok" do
+      @blog.step_6({
+                     "guid1" => Time.now.to_f,
+                   }).should be_true
+
+      select = db.meta_q.project(db.meta_q[:bid])
+      select.where(db.meta_q[:bid].eq @blog.bid)
+      db.get_first_value(select.to_sql).should == @blog.bid
+    end
+
+    it "重複" do
+      @blog.step_6({
+                     "guid1" => Time.now.to_f,
+                   }).should be_false
+    end
+  end
+
+  describe "run" do
+    before do
+      delete_blog
+      delete_blog_q
+      delete_entry_q
+      delete_meta_q
+      get_session
+
+          # @bid = "test.example.com"
+          # insert = db.blog_q.insert_manager
+          # insert.insert([
+          #                 [db.blog_q[:bid],    @bid],
+          #                 [db.blog_q[:queued], Time.now.to_f]
+          #               ])
+          # db.execute insert.to_sql
+    end
+
+    it "キュー無し" do
+      proc do
+        @blog.run
+      end.should raise_error(Emark::Publish::Empty)
+    end
+
+    describe "キュー有り" do
+      before do
+        @bid = "test.example.com"
+        insert = db.blog_q.insert_manager
+        insert.insert([
+                        [db.blog_q[:bid],    @bid],
+                        [db.blog_q[:queued], Time.now.to_f]
+                      ])
+        db.execute insert.to_sql
+      end
+
+      it "ブログ無し" do
+        proc do
+          @blog.run
+        end.should raise_error(Emark::Publish::Fatal)
+      end
+
+      describe "ブログ有り" do
+        before do
+          @bid = "test.example.com"
+          insert = db.blog.insert_manager
+          insert.insert([
+                          [db.blog[:uid], @session[:uid]],
+                          [db.blog[:bid], @bid]
+                        ])
+          db.execute insert.to_sql
+        end
+
+        it "hoge" do
+          sync do
+            @blog.run.should >= 1
+          end
+        end
+      end
+    end
   end
 end

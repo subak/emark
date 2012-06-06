@@ -106,4 +106,15 @@ module Helper
     db.execute delete.to_sql
   end
 
+  def delete_entry_q
+    delete = DeleteManager.new Table.engine
+    delete.from db.entry_q
+    db.execute delete.to_sql
+  end
+
+  def delete_meta_q
+    delete = DeleteManager.new Table.engine
+    delete.from db.meta_q
+    db.execute delete.to_sql
+  end
 end
