@@ -117,6 +117,20 @@ module Emark
         syncNotes
       end
 
+      ##
+      # キューを入れる
+      def step_5 do syncNotes
+        # entryテーブルにキューを入れる
+        syncNotes.each do |guid, updated|
+          @db.execute(@ext.sql_publish(:entry_enqueue),
+              guid, updated, @blogid)
+        end
+
+        # metaテーブルにキューを入れる
+        ret if syncNotes.empty?
+        @db.execute @ext.sql_publish(:meta_enqueue), @blogid
+        @logger.info "Emark::Publish::Blog => #{syncNotes.size} entries enqueued."
+      end
     end
   end
 end

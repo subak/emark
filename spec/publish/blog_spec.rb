@@ -136,6 +136,84 @@ describe Emark::Publish::Blog do
   end
 
   describe "step_4" do
-    pending "これから"
+    before:all do
+      @notebooks = {}
+      @result[:step_3].notes.each do |note|
+        @notebooks[note.guid] = note.updated
+      end
+    end
+
+    before do
+      delete = DeleteManager.new Table.engine
+      delete.from db.sync
+      db.execute delete.to_sql
+    end
+
+    it "sync無し insert" do
+      @blog.step_4(@result[:step_3]).each do |key, value|
+        value.should_not == 0
+      end
+    end
+
+    describe "sync有り" do
+      it "update" do
+        @notebooks.each do |guid, updated|
+          insert = db.sync.insert_manager
+          insert.insert([
+                          [db.sync[:note_guid], guid],
+                          [db.sync[:updated],   updated - 10],
+                          [db.sync[:bid],       @bid]
+                        ])
+          db.execute insert.to_sql
+        end
+
+        @blog.step_4(@result[:step_3]).each do |guid, updated|
+          updated.should_not == 0
+        end
+      end
+
+      it "何もしない" do
+        @notebooks.each do |guid, updated|
+          insert = db.sync.insert_manager
+          insert.insert([
+                          [db.sync[:note_guid], guid],
+                          [db.sync[:updated],   updated],
+                          [db.sync[:bid],       @bid]
+                        ])
+          db.execute insert.to_sql
+        end
+
+        @blog.step_4(@result[:step_3]).should be_empty
+      end
+
+      it "削除する" do
+        insert = db.sync.insert_manager
+        insert.insert([
+                        [db.sync[:note_guid], "should_be_deleted"],
+                        [db.sync[:updated],   Time.now.to_i],
+                        [db.sync[:bid],       @bid]
+                      ])
+        db.execute insert.to_sql
+
+        result = @blog.step_4(@result[:step_3])
+        result.should have_key("should_be_deleted")
+        result["should_be_deleted"].should be_nil
+      end
+    end
+  end
+
+  describe "step_5" do
+    before:all do
+      delete = DeleteManager.new Table.engine
+      delete.from db.entry_q
+      db.execute delete.to_sql
+
+      delete = DeleteManager.new Table.engine
+      delete.from db.meta_q
+      db.execute delete.to_sql
+    end
+
+    
+
   end
 end

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120605193916) do
+ActiveRecord::Schema.define(:version => 20120605211646) do
 
   create_table "blog", :force => true do |t|
     t.text    "bid",      :default => "", :null => false
@@ -31,6 +31,22 @@ ActiveRecord::Schema.define(:version => 20120605193916) do
 
   add_index "blog_q", ["bid"], :name => "index_blog_q_on_bid", :unique => true
 
+  create_table "entry_q", :force => true do |t|
+    t.text    "note_guid"
+    t.integer "updated"
+    t.text    "bid"
+    t.float   "queued"
+  end
+
+  add_index "entry_q", ["note_guid"], :name => "index_entry_on_note_guid", :unique => true
+
+  create_table "meta_q", :force => true do |t|
+    t.text  "bid"
+    t.float "queued"
+  end
+
+  add_index "meta_q", ["bid"], :name => "index_meta_on_bid", :unique => true
+
   create_table "session", :force => true do |t|
     t.integer "uid",       :default => 0, :null => false
     t.text    "shard"
@@ -40,5 +56,16 @@ ActiveRecord::Schema.define(:version => 20120605193916) do
   end
 
   add_index "session", ["uid"], :name => "index_session_on_user_id", :unique => true
+
+  create_table "sync", :force => true do |t|
+    t.text    "note_guid"
+    t.text    "title"
+    t.integer "created"
+    t.integer "updated"
+    t.integer "deleted",   :default => 0, :null => false
+    t.text    "bid"
+  end
+
+  add_index "sync", ["note_guid"], :name => "index_sync_on_note_guid", :unique => true
 
 end

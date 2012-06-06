@@ -37,12 +37,24 @@ def db.blog_q
   Table.new(:blog_q)
 end
 
+def db.entry_q
+  Table.new(:entry_q)
+end
+
+def db.meta_q
+  Table.new(:meta_q)
+end
+
 def db.session
   Table.new(:session)
 end
 
 def db.blog
   Table.new(:blog)
+end
+
+def db.sync
+  Table.new(:sync)
 end
 
 logger = Logger.new(STDOUT)
