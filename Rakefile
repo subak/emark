@@ -1,3 +1,5 @@
+require "pp"
+
 desc "install"
 task :install do
   sh "bundle install --path vender/bundle"
@@ -37,5 +39,30 @@ task :nginx do
     f.puts erb.result
   end
   puts "write to #{config.nginx_conf}"
+end
 
+desc "sprockets"
+task:sprockets do
+  require "bundler"
+  Bundler.require :sprockets
+
+  vendors = []
+  $:.each do |path|
+    next if path !~ /\/lib$/
+    ["/vendor/assets/javascripts", "/app/assets/javascripts"].each do |suffix|
+      vendor = path.sub /\/lib$/, suffix
+      vendors << vendor if File.exist? vendor
+    end
+  end
+
+  environment = Sprockets::Environment.new
+  vendors.each do |vendor|
+    environment.append_path vendor
+  end
+
+  # path = "spec/assets/javascript/application.js"
+  # mkdir_p File.dirname(path)
+  # File.open path, "w" do |fp|
+  #   fp.puts environment["application.js"].to_s
+  # end
 end

@@ -16,14 +16,23 @@ group :http do
   gem "sinatra"
 end
 
+group :sprockets do
+  gem "rails"
+  gem "eco"
+  gem "ejs"
+  gem "sprockets"
+  gem "spine-rails"
+  gem "jquery-rails"
+end
+
 group :cli do
   gem "rack-test", :require => "rack/test"
   gem "standalone_migrations"
   gem "thin"
   gem "rspec"
   gem "simplecov"
-  gem "rb-fsevent", :require => false
-  gem "guard"
+  gem "rb-fsevent"
+  gem "guard-shell"
 end
 
 group :publich do
