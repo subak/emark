@@ -7,7 +7,7 @@ class Sync < ActiveRecord::Migration
     add_column :sync, :created, :integer
     add_column :sync, :updated, :integer
     add_column :sync, :deleted, :integer, :null => false, :default => 0
-    add_column :sync, :bid,     :text
+    add_column :sync, :bid,     :textZ
   end
 
   def self.down

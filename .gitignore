@@ -1,7 +1,11 @@
 /.bundle
 /Gemfile.lock
-/vender
+/vendor
 /db/*.sqlite3
 /tmp/*
 !/tmp/.gitkeep
 /coverage
+/test
+/scripts
+
+/public

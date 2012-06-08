@@ -22,6 +22,8 @@ group :cli do
   gem "thin"
   gem "rspec"
   gem "simplecov"
+  gem "rb-fsevent", :require => false
+  gem "guard"
 end
 
 group :publich do

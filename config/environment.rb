@@ -25,7 +25,7 @@ when "production"
   config.admin_protocol = "https"
   config.admin_host =     "everblog.subak.jp"
   config.admin_port =     443
-  config.nginx_conf =     "/home/www/nginx/conf/include/everblog.conf"
+  config.nginx_conf =     "/home/www/nginx/conf/include/emark.conf"
   config.logger_level =   Logger::WARN
   config.thread_abort =   false
 else
@@ -35,7 +35,7 @@ else
   config.admin_protocol = "https"
   config.admin_host =     "localhost"
   config.admin_port =     4430
-  config.nginx_conf =     "/home/www/nginx/conf/include/everblog.conf"
+  config.nginx_conf =     "/Volumes/Data/Users/hiro/Dev/nginx/conf/include/emark.conf"
   config.logger_level =   Logger::DEBUG
   config.thread_abort =   true
 end
@@ -44,5 +44,4 @@ config.site_hostname =  "#{config.site_host}" + case (p = config.site_port) when
 config.site_href =      "#{config.site_protocol}://#{config.site_hostname}"
 config.admin_hostname = "#{config.admin_host}" + case (p = config.admin_port) when 443,80,nil then "" else ":#{p}" end
 config.admin_href =     "#{config.admin_protocol}://#{config.admin_hostname}"
-
 

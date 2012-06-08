@@ -1,0 +1,110 @@
+upstream thin {
+  server unix:<%= "#{config.root}/tmp/thin.sock" %>;
+}
+
+##
+# サイト
+server {
+  listen      <%= config.site_port %>;
+  server_name <%= config.site_host %>;
+
+  root <%= "#{config.public}/emark.jp" %>;
+
+  location "~^(/|/faq|/howtouse)$" {
+    rewrite ^ /index.html last;
+  }
+
+
+#  expires 1M;
+}
+
+
+##
+# 管理ページ
+server {
+  listen      <%= config.admin_port %> default ssl;
+  server_name <%= config.admin_host %>;
+
+  ssl                 on;
+  ssl_certificate     ssl/server.crt;
+  ssl_certificate_key ssl/server.key;
+
+  root <%= "#{config.public}/emark.jp" %>;
+
+  include include/bot;
+  if ( $bot = true ) {
+    return 403;
+  }
+
+  location "~^(/|/logout|/dashboard|/publish|/open|/close/.+|/check/blogid/.+|/config/.+|/sync/.+)$" {
+    proxy_set_header HTTPS on;
+    proxy_set_header X_FORWARDED_PROTO https;
+    if ( $http_X_Requested_With ~ XMLHttpRequest ) {
+      proxy_pass http://thin;
+      break;
+    }
+
+    rewrite ^ /dashboard.html last;  
+  }
+}
+
+
+##
+# ユーザー
+server {
+  listen      <%= config.site_port %>  default_server;
+  server_name _;
+#  expires 24h;
+
+  set $dir_prefix "";
+  if ( $host ~ "^(..).*$" ) {
+    set $dir_prefix $1;
+  }
+  set $root "<%= "#{config.public}/_/${dir_prefix}/$host" %>";
+  root $root;
+
+  if ( -f $request_filename ) {
+     break;
+  }
+
+  include include/bot;
+
+  location = / {
+    if ( $bot = true ) {
+      rewrite ^ /index.html last;
+      break;
+    }
+
+    rewrite ^ /template.html last;
+  }
+
+  location "~^/([0-9a-zA-Z]{4})$" {
+    set $eid $1;
+    if ( !-e "${root}/${eid}.html" ) {
+      return 404;
+    }
+
+    if ( $bot = true ) {
+      rewrite ^ "/${eid}.html" last;
+      break;
+    }
+
+    rewrite ^ /template.html last;
+  }
+
+  location = /archives {
+    if ( $bot = true ) {
+      return 403;
+    }
+
+    rewrite ^ /template.html last;
+  }
+
+  location "~^/page/\d+$" {
+    if ( $bot = true ) {
+      return 403;
+    }
+
+    rewrite ^ /template.html last;
+  }
+}
