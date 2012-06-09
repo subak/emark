@@ -33,6 +33,7 @@ group :cli do
   gem "simplecov"
   gem "rb-fsevent"
   gem "guard-shell"
+  gem "jasmine-headless-webkit"
 end
 
 group :publich do
