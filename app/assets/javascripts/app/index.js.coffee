@@ -22,3 +22,5 @@ class App extends Spine.Controller
     Spine.Route.setup()    
 
 window.App = App
+
+console.log Spine

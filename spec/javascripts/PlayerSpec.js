@@ -7,6 +7,10 @@ describe("Player", function() {
     song = new Song();
   });
 
+  it("hoge", function() {
+    expect(Spine).not.toBeNull;
+  });
+
   it("should be able to play a Song", function() {
     player.play(song);
     expect(player.currentlyPlayingSong).toEqual(song);

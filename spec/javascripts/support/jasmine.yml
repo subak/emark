@@ -11,7 +11,7 @@
 #   - dist/**/*.js
 #
 src_files:
-    - public/javascripts/**/*.js
+- "*.js"
 
 # stylesheets
 #
@@ -60,6 +60,10 @@ spec_files:
 # src_dir: public
 #
 src_dir:
+- public/javascripts
+- app/assets/javascripts
+- vendor/assets/javascripts
+
 
 # spec_dir
 #
@@ -71,3 +75,4 @@ src_dir:
 # spec_dir: spec/javascripts
 #
 spec_dir:
+
