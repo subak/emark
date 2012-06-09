@@ -41,6 +41,20 @@ task :nginx do
   puts "write to #{config.nginx_conf}"
 end
 
+desc "config_js"
+task :config_js do
+  require "erb"
+  require "./config/environment"
+
+  path = "app/assets/javascripts/config.js"
+
+  erb = ERB.new File.read("./config/config.js.erb")
+  File.open path, "w" do |fp|
+    fp.puts erb.result
+  end
+  puts "write to #{path}"
+end
+
 desc "sprockets"
 task:sprockets do
   require "bundler"

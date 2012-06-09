@@ -212,6 +212,13 @@ get "/dashboard" do
   body({blogs: blogs}.to_json)
 end
 
+get "/config" do
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:uid].eq @session[:uid])
+
+  db.execute(select.to_sql).to_json
+end
+
 get "/open" do
   sleep 1
 

@@ -1,0 +1,79 @@
+<!--#publish-container-->
+
+<div class="modal-header">
+  <a class="close" data-dismiss="modal">x</a>
+  <h3>ブログを公開する</h3>
+</div>
+
+<% available = false %>
+<% for notebook in @notebooks: %>
+<% available |= notebook.available %>
+<% end %>
+
+<% if available: %>
+<form class="form-horizontal" id="blog-form">
+  <div class="modal-body">
+    <fieldset>
+      <div class="control-group">
+        <label class="control-label">ノートブック</label>
+        <div class="controls">
+          <select>
+          <% for notebook in @notebooks: %>
+            <% if notebook.available: %>
+            <option value="<%= notebook.notebookGuid  %>"><%= notebook.notebookName  %></option>
+            <% end %>
+          <% end %>
+          </select>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="input-subdomain">公開 URL</label>
+
+        <div class="controls">
+          <div class="input-prepend input-append">
+            <span class="add-on">http://</span><input class="input-medium" id="input-subdomain" type="text" name="subdomain" placeholder="サブドメイン"><span class="add-on">.${config:site_host}/</span>
+            <input type="hidden" name="domain" value="${config:site_host}">
+          </div>
+
+          <p class="help-block hidden" id="msg-domain-invalid">
+            URLの形式が無効です。
+            URLに<strong>利用可能な文字は [0-9a-z.-] </strong>です。
+            <strong>最初と最後に [.-] </strong>を使用することは出来ません。
+            <strong>[.-] は続けて</strong>使用することが出来ません。
+          </p>
+          <p class="help-block hidden" id="msg-domain-double">
+            URLは既に使用されています。
+          </p>
+          <p class="help-block hidden" id="msg-domain-empty">
+            URLが入力されていません。
+          </p>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">キャンセル</button>
+    <button type="submit" class="btn btn-primary" data-msg-confirm="ノートブックとブログのURLは一度公開すると変更できません。
+入力した内容で公開してよろしいですか？">ブログを公開する</button>
+  </div>
+</form>
+
+<% else: %>
+
+<div class="modal-body">
+  <p class="alert">ブログとして公開できる<strong>ノートブックがありません</strong>。ノートブックを「<a href="${config:site_href}#howtouse">世界中と共有</a>」する必要があります。</p>
+  <p>次のノートブックは「共有」されていないか、またはすでに他のブログで公開されているため<strong>使用できません</strong>。</p>
+  <ul>
+  <% for notebook in @notebooks: %>
+    <% if notebook.available: %>
+    <li><%= notebook.notebookName  %></li>
+    <% end %>
+  <% end %>
+  </ul>
+</div>
+<div class="modal-footer" data-tpl-remove-if-id="notebooks" data-tpl-remove-id-exist>
+  <button class="btn" data-dismiss="modal">閉じる</button>
+</div>
+
+<% end %>
