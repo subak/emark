@@ -60,11 +60,11 @@ task:sprockets do
     environment.append_path vendor
   end
 
-  # path = "spec/assets/javascript/application.js"
-  # mkdir_p File.dirname(path)
-  # File.open path, "w" do |fp|
-  #   fp.puts environment["application.js"].to_s
-  # end
+  path = "public/emark.jp/js/application.js"
+  mkdir_p File.dirname(path)
+  File.open path, "w" do |fp|
+    fp.puts environment["application.js"].to_s
+  end
 end
 
 begin

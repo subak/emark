@@ -35,6 +35,7 @@ group :cli do
   gem "guard-shell"
   gem "jasmine"
   gem "jasmine-headless-webkit"
+  gem "guard-jasmine-headless-webkit"
 end
 
 group :publich do
