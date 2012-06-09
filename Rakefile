@@ -75,3 +75,8 @@ rescue LoadError
     abort "Jasmine is not available. In order to run jasmine, you must: (sudo) gem install jasmine"
   end
 end
+
+desc "jspec"
+task:jspec do
+  sh "bundle exec jasmine-headless-webkit -c"
+end

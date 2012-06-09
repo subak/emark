@@ -1,3 +1,5 @@
+.*
+!/.gitignore
 /.bundle
 /Gemfile.lock
 /vendor
