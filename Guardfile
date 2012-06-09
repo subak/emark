@@ -7,11 +7,11 @@ guard :shell do
   end
 
   watch %r{app/assets/javascripts/.*\.coffee$} do
-    sh "bundle exec rake sporkets"
+    `bundle exec rake sprockets`
   end
 end
 
-guard :jasmine-headless-webkit do
+guard "jasmine-headless-webkit" do
   watch %r{spec/javascripts/.*\.coffee$}
   watch %r{app/assets/javascripts/.*\.coffee$}
 end
