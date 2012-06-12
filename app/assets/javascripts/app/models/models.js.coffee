@@ -1,6 +1,7 @@
 class Model.Blog extends Spine.Model
   @configure "Blog", "bid", "title", "subtitle", "author"
   @extend Spine.Model.Ajax
+  @url: "/blog"
 
 class Model.Notebook extends Spine.Model
   @configure "Notebook", "notebookGuid", "notebookName", "available"

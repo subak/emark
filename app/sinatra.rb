@@ -198,10 +198,16 @@ get "/" do
   end
 end
 
-get "blog" do
-  params[:id]
+get "/blog" do
+  sleep 0.5
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:uid].eq @session[:uid])
+  db.execute(select.to_sql).to_json
 end
 
+put "/blog/:id" do
+  params[:id]
+end
 
 get "/dashboard" do
   sleep 1

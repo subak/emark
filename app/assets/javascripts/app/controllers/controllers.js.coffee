@@ -7,12 +7,11 @@ class Controller.Dashboard extends Spine.Controller
     @config = Emark.config
     super
     @active ->
-      Model.Blog.url = "/dashboard"
-      Model.Blog.fromJSON = (object)->
-        for blog in object.blogs
-          new @(blog)
-      Model.Blog.fetch()
-      Model.Blog.one "refresh", @render
+      if 1 <= Model.Blog.count()
+        @delay((=> @render()), 500)
+      else
+        Model.Blog.fetch()
+        Model.Blog.one "refresh", @render
   render: =>
     @stack.loading.trigger "hide"
     @blogs = Model.Blog.all()
@@ -31,49 +30,27 @@ class Controller.Dashboard extends Spine.Controller
     @navigate $(event.currentTarget).attr("href")
 
 
-class Controller.Notebook extends Spine.Controller
-  constructor: ->
-    @config = Emark.config
-    @el = $("#publish-container")
-    super
-    @active ->
-      Model.Notebook.one "refresh", @render
-      Model.Notebook.fetch()
-  render: =>
-    @stack.loading.trigger "hide"
-    @notebooks = Model.Notebook.all()
-    @el.empty()
-    @html @view("notebooks")(@)
-    @el.modal "show"
-  events:
-    "hidden" : "hidden"
-    "submit form" : "submit"
-  submit: (event)->
-    event.preventDefault()
-  hidden: ->
-    @stack.loading.trigger "show"
-    @navigate "/dashboard"
-
-
 class Controller.Config extends Spine.Controller
   constructor: ->
     @config = Emark.Config
-    @el = $("<div class='modal fade'></div>")
     super
     @active (params)->
-      Model.Config.url = "/config/#{params.bid}"
-      Model.Config.fetch()
-      Model.Config.one  "refresh",   @render
-      Model.Config.bind "error",     @validationError
+      @bid = params.bid
+      if Model.Blog.findByAttribute("bid", @bid)
+        @delay((=> @render()), 500)
+      else
+        Model.Blog.fetch()
+        Model.Blog.one "refresh", @render
   render: =>
+    @blog = Model.Blog.findByAttribute("bid", @bid)
     @stack.loading.trigger "hide"
-    @blog = Model.Config.first()
-    @el.empty()
-    @html @view("config")(@)
+    @replace @view("config")(@)
     @el.modal "show"
   validationError: (rec, msg)=>
     console.log "validationErrorだよ"
+
   updated: =>
+    @stack.loading.trigger "show"
     @navigate "/dashboard"
   events:
     "hidden":            "hidden"
@@ -93,6 +70,31 @@ class Controller.Config extends Spine.Controller
     blog.save()
     @el.modal "hide"
     @stack.loading.trigger "show"
+
+
+class Controller.Open extends Spine.Controller
+  constructor: ->
+    @config = Emark.config
+    super
+    @active ->
+      if 1 <= Model.Notebook.count()
+        @delay((-> @render()), 500)
+      else
+        Model.Notebook.one "refresh", @render
+        Model.Notebook.fetch()
+  render: =>
+    @stack.loading.trigger "hide"
+    @notebooks = Model.Notebook.all()
+    @replace @view("open")(@)
+    @el.modal "show"
+  events:
+    "hidden":      "hidden"
+    "submit form": "submit"
+  hidden: ->
+    @stack.loading.trigger "show"
+    @navigate "/dashboard"
+  submit: (event)->
+    event.preventDefault()
 
 
 class Controller.Redirect extends Spine.Controller

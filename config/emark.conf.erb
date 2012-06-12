@@ -36,7 +36,7 @@ server {
     return 403;
   }
 
-  location "~^(/|/logout|/dashboard|/publish|/open|/close/.+|/check/blogid/.+|/config|/config/.+|/sync/.+)$" {
+  location "~^(/|/blog|/blog/\d+|/logout|/dashboard|/publish|/open|/close/.+|/check/blogid/.+|/config|/config/.+|/sync/.+)$" {
     proxy_set_header HTTPS on;
     proxy_set_header X_FORWARDED_PROTO https;
     if ( $http_X_Requested_With ~ XMLHttpRequest ) {

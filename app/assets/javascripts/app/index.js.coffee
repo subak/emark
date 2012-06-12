@@ -22,17 +22,17 @@ class App extends Spine.Controller
 
     class Pages extends Spine.Stack
       controllers:
-        redirect: Controller.Redirect
+        redirect:  Controller.Redirect
         dashboard: Controller.Dashboard
-        notebook: Controller.Notebook
-        config:   Controller.Config
-        sync:     Controller.Sync
-        loading:  Controller.Loading
-        error:    Controller.Error
+        open:      Controller.Open
+        config:    Controller.Config
+        sync:      Controller.Sync
+        loading:   Controller.Loading
+        error:     Controller.Error
       routes:
         "/":            "redirect"
         "/dashboard":   "dashboard"
-        "/open":        "notebook"
+        "/open":        "open"
         "/config/:bid": "config"
         "/sync/:bid":   "sync"
 
