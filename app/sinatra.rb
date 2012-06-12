@@ -207,7 +207,6 @@ end
 
 post "/blogs" do
   params = JSON.parse(request.body.read)
-  pp params
 
   raise Forbidden if env["rack.session"][:notebooks].!
   notebooks    = env["rack.session"][:notebooks]
@@ -215,9 +214,6 @@ post "/blogs" do
   notebook     = params["notebook"]
   raise Forbidden if notebooks[notebook].!
   notebookName = notebooks[notebook]
-  # raise Forbidden if params["domain"].!
-  # raise Forbidden if params["subdomain"].!
-  # blog_id      = params["subdomain"] + '.' + params["domain"]
   bid          = params["bid"]
   raise Forbidden if bid !~ /^(([0-9a-z]+[.-])+)?[0-9a-z]+$/
   select = db.blog.project(db.blog[:bid])
@@ -232,12 +228,23 @@ post "/blogs" do
                   [db.blog[:title],    notebookName],
                   [db.blog[:author],   bid]
                 ])
-  db.execute insert.to_sql
+  id = nil
+  db.transaction do
+    db.execute insert.to_sql
+    id = db.last_insert_row_id
+    raise Fatal if id.!
+  end
 
   sleep 1
   env["rack.session"][:notebooks] = nil
 
-  200
+  {
+    :id       => id,
+    :bid      => bid,
+    :notebook => notebook,
+    :title    => notebookName,
+    :author   => bid
+  }.to_json
 end
 
 put "/blogs/:id" do |id|
@@ -253,13 +260,27 @@ put "/blogs/:id" do |id|
              ])
   db.transaction do
     db.execute update.to_sql
-    raise Forbidden if (db.changes >= 1).!
+    raise Forbidden if (db.changes == 1).!
   end
 
   sleep 1
   200
 end
 
+delete "/blogs/:id" do |id|
+  delete = DeleteManager.new Table.engine
+  delete.from db.blog
+  delete.where(db.blog[:uid].eq @session[:uid])
+  delete.where(db.blog[:id].eq  id)
+
+  db.transaction do
+    db.execute delete.to_sql
+    raise Forbidden if (db.changes == 1).!
+  end
+
+  sleep 1
+  200
+end
 
 get "/notebooks" do
   notebooks = thread do
@@ -302,45 +323,6 @@ get "/notebooks" do
   body data.to_json
 end
 
-
-
-
-
-get "/dashboard" do
-  sleep 1
-
-  blogs = []
-  select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:uid].eq @session[:uid])
-
-  db.execute select.to_sql do |row|
-    blogs << row
-  end
-
-  body({blogs: blogs}.to_json)
-end
-
-get "/config" do
-  select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:uid].eq @session[:uid])
-
-  db.execute(select.to_sql).to_json
-end
-
-##
-# 設定
-get "/config/:blog_id" do |blog_id|
-  sleep 1
-
-  select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:uid].eq @session[:uid])
-  select.where(db.blog[:bid].eq blog_id)
-  row = db.get_first_row select.to_sql
-  raise Forbidden if row.!
-
-  body row.to_json
-end
-
 ##
 # bidのチェック
 get "/check/bid" do
@@ -352,83 +334,6 @@ get "/check/bid" do
 
   "#{check.!}"
 end
-
-post "/open" do
-  raise Forbidden if env["rack.session"][:notebooks].!
-  notebooks    = env["rack.session"][:notebooks]
-  raise Forbidden if params["notebookGuid"].!
-  notebookGuid = params['notebookGuid']
-  raise Forbidden if notebooks[notebookGuid].!
-  notebookName = notebooks[notebookGuid]
-  raise Forbidden if params["domain"].!
-  raise Forbidden if params["subdomain"].!
-  blog_id      = params["subdomain"] + '.' + params["domain"]
-  raise Forbidden if blog_id !~ /^(([0-9a-z]+[.-])+)?[0-9a-z]+$/
-  select = db.blog.project(db.blog[:bid])
-  select.where(db.blog[:bid].eq blog_id)
-  check = db.get_first_value select.to_sql
-  raise Forbidden if check
-
-  insert = db.blog.insert_manager
-  insert.insert([
-                  [db.blog[:uid], @session[:uid]],
-                  [db.blog[:bid], blog_id],
-                  [db.blog[:title],   notebookName],
-                  [db.blog[:author],  blog_id]
-                ])
-  db.execute insert.to_sql
-
-  sleep 3
-  env["rack.session"][:notebooks] = nil
-
-  200
-end
-
-put "/config/:id" do |id|
-  params = JSON.parse(request.body.read)
-
-  update = UpdateManager.new Table.engine
-  update.table db.blog
-  update.where(db.blog[:uid].eq @session[:uid])
-  update.where(db.blog[:id].eq id)
-  update.set([
-               [db.blog[:title],    params["title"]],
-               [db.blog[:subtitle], params["subtitle"]],
-               [db.blog[:author],   params["author"]]
-             ])
-  db.transaction do
-    db.execute update.to_sql
-    raise Forbidden if (db.changes >= 1).!
-  end
-
-  sleep 1
-  200
-end
-
-
-# put '/config/:bid' do |bid|
-#   pp params
-#   pp request
-#   payload = request.body.read
-#   data = JSON.parse(payload)
-#   pp data
-
-#   update = UpdateManager.new Table.engine
-#   update.table db.blog
-#   update.where(db.blog[:uid].eq @session[:uid])
-#   update.where(db.blog[:bid].eq bid)
-#   update.set([
-#                [db.blog[:title],  params["title"]],
-#                [db.blog[:author], params["author"]]
-#              ])
-#   db.transaction do
-#     db.execute update.to_sql
-#     raise Forbidden if (db.changes >= 1).!
-#   end
-
-#   sleep 3
-#   200
-# end
 
 # ブログを削除
 delete "/close/:bid" do |bid|

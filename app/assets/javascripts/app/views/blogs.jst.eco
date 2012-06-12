@@ -1,7 +1,7 @@
 <div class="container" id="index-container">
   <div class="row">
     <% for blog in @blogs: %>
-    <div class="span4 blogs" data-tpl-block="blogs">
+    <div class="span4 blogs">
       <section class="well">
         <table style="height:250px;width:100%;">
           <tbody>
@@ -19,7 +19,7 @@
               <td style="vertical-align:bottom;">
                 <p class="edit-success"><a href="/sync/<%= blog.bid %>" data-state="push" class="btn btn-warning sync" style="display:block;"><i class="icon-refresh icon-white"></i> 同期</a></p>
                 <p class="edit-success"><a href="/config/<%= blog.bid %>" data-state="push" class="btn btn-info config" style="display:block;"><i class="icon-cog icon-white"></i> 設定</a></p>
-                <p class="edit-danger"><a href="/close/<%= blog.bid %>" data-state="replace" class="btn btn-danger" style="display:block;" data-msg="削除したデータは元に戻せません。よろしいですか？"><i class="icon-trash icon-white"></i> 削除</a></p>
+                <p class="edit-danger"><a href="/close/<%= blog.bid %>" data-state="replace" class="btn btn-danger delete" style="display:block;" data-msg="削除したデータは元に戻せません。よろしいですか？"><i class="icon-trash icon-white"></i> 削除</a></p>
               </td>
             </tr>
           </tbody>

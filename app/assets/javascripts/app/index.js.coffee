@@ -1,9 +1,9 @@
 #= require config
 #= require json2
 #= require jquery
-#= require spine
+#= require ./lib/spine
 #= require spine/manager
-#= require spine/ajax
+#= require ./lib/ajax
 #= require spine/route
 
 #= require_tree ./lib
@@ -26,6 +26,7 @@ class App extends Spine.Controller
         dashboard: Controller.Dashboard
         open:      Controller.Open
         config:    Controller.Config
+        close:     Controller.Close
         sync:      Controller.Sync
         loading:   Controller.Loading
         error:     Controller.Error
@@ -33,6 +34,7 @@ class App extends Spine.Controller
         "/":            "redirect"
         "/dashboard":   "dashboard"
         "/open":        "open"
+        "/close/:bid":  "close"
         "/config/:bid": "config"
         "/sync/:bid":   "sync"
 

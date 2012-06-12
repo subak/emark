@@ -3,23 +3,28 @@ class Controller.Dashboard extends Spine.Controller
     "click #open-blog > a":     "navigate_to_open"
     "click a[class~='config']": "navigate_to_config"
     "click a[class~='sync']":   "sync"
+    "click a[class~='delete']": "delete_blog"
   constructor: ->
     @config = Emark.config
     super
     @active ->
       if 1 <= Model.Blog.count()
-        @delay((=> @render()), 500)
+        @render()
       else
         Model.Blog.fetch()
         Model.Blog.one "refresh", @render
   render: =>
-    @stack.loading.trigger "hide"
     @blogs = Model.Blog.all()
-    @replace @view("blogs")(@)
+    @delay =>
+      @replace @view("blogs")(@)
+      @stack.loading.trigger "hide"
+    , 1000
+
   navigate_to_open: =>
     event.preventDefault()
     @stack.loading.trigger "show"
     @navigate "/open"
+
   navigate_to_config: (event)=>
     event.preventDefault()
     @stack.loading.trigger "show"
@@ -28,7 +33,19 @@ class Controller.Dashboard extends Spine.Controller
     event.preventDefault()
     @stack.loading.trigger "show"
     @navigate $(event.currentTarget).attr("href")
+  delete_blog: (event)=>
+    event.preventDefault()
+    @stack.loading.trigger "show"
+    @navigate $(event.currentTarget).attr("href")
 
+class Controller.Close extends Spine.Controller
+  active: (params)->
+      blog = Model.Blog.findByAttribute("bid", params.bid)
+      return @stack.error.trigger("show") if not blog
+      blog.one "ajaxSuccess", @destroyed
+      blog.destroy()
+  destroyed: =>
+    @navigate "/dashboard"
 
 class Controller.Config extends Spine.Controller
   constructor: ->
@@ -68,7 +85,7 @@ class Controller.Config extends Spine.Controller
   submit: (event)->
     event.preventDefault()
     blog = @blog.fromForm(event.currentTarget)
-    blog.bind "ajaxSuccess", @updated
+    blog.one "ajaxSuccess", @updated
     blog.save()
     @el.modal "hide"
     @stack.loading.trigger "show"
@@ -99,11 +116,11 @@ class Controller.Open extends Spine.Controller
   new_blog: (form)=>
     blog = Model.Blog.fromForm(form)
     blog.one "ajaxSuccess", @updated
+    @stack.loading.trigger "show"
     @el.modal "hide"
     blog.save()
 
-  updated: =>
-    @stack.loading.trigger "show"
+  updated: (blog)=>
     @navigate "/dashboard"
 
   shown: ->
@@ -148,7 +165,6 @@ class Controller.Sync extends Spine.Controller
       @model.one "ajaxSuccess", @render
     super
   render: =>
-    console.log typeof @model.queued
     @stack.loading.trigger "hide"
     @replace @view("sync")(@)
     @el.modal "show"
