@@ -36,7 +36,6 @@ class App extends Spine.Controller
         "/config/:bid": "config"
         "/sync/:bid":   "sync"
 
-    Model.Config.bind   "ajaxError", @ajaxError
     Model.Notebook.bind "ajaxError", @ajaxError
     @append(@pages = new Pages)
     Spine.Route.setup(history: true)   
@@ -46,4 +45,36 @@ class App extends Spine.Controller
 
 window.App = App
 
+jQuery.validator.messages = 
+  required:    "required"
+  remote:      "remote"
+  email:       "email"
+  url:         "url"
+  date:        "date"
+  dateISO:     "dateISO"
+  number:      "number"
+  digits:      "digits"
+  creditcard:  "creditcard"
+  equalTo:     "equalto"
+  maxlength:   "maxlength"
+  minlength:   "minlength"
+  rangelength: "rangelength"
+  range:       "range"
+  max:         "max"
+  min:         "min"
 
+jQuery.validator.setDefaults
+  invalidHandler: (event, validator)->
+    $("[id^='invalid-']", event.currentTarget).addClass "hidden"
+    for obj in validator.errorList
+      context = $(obj.element).parents(".control-group")[0]
+      if context
+        console.log "#invalid-#{obj.element.name}-with-#{obj.message}"
+        $("#invalid-#{obj.element.name}-with-#{obj.message}").removeClass "hidden"
+      $(context).addClass "error"
+  showErrors: -> null
+
+jQuery.validator.addMethod "regex", (value, element, params)->
+  console.log this
+  false
+, "regex"

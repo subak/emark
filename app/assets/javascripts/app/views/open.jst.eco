@@ -16,7 +16,7 @@
         <div class="control-group">
           <label class="control-label">ノートブック</label>
           <div class="controls">
-            <select>
+            <select name="notebook">
             <% for notebook in @notebooks: %>
               <% if notebook.available: %>
               <option value="<%= notebook.notebookGuid  %>"><%= notebook.notebookName  %></option>
@@ -27,26 +27,26 @@
         </div>
         <div class="control-group">
           <label class="control-label" for="input-subdomain">公開 URL</label>
-
           <div class="controls">
             <div class="input-prepend input-append">
               <span class="add-on">http://</span><input class="input-medium" id="input-subdomain" type="text" name="subdomain" placeholder="サブドメイン"><span class="add-on">.<%= @config.site_host %>/</span>
               <input type="hidden" name="domain" value="<%= @config.site_host %>">
             </div>
-
-            <p class="help-block hidden" id="msg-domain-invalid">
+            <p class="help-block hidden" id="invalid-subdomain-with-required">
+              URLが入力されていません。
+            </p>
+            <p class="help-block hidden" id="invalid-url-with-url">
               URLの形式が無効です。
               URLに<strong>利用可能な文字は [0-9a-z.-] </strong>です。
               <strong>最初と最後に [.-] </strong>を使用することは出来ません。
               <strong>[.-] は続けて</strong>使用することが出来ません。
             </p>
-            <p class="help-block hidden" id="msg-domain-double">
+            <p class="help-block hidden" id="invalid-bid-with-remote">
               URLは既に使用されています。
             </p>
-            <p class="help-block hidden" id="msg-domain-empty">
-              URLが入力されていません。
-            </p>
           </div>
+          <input name="url" value="" type="text" class="input-mini" style="visibility:hidden">
+          <input name="bid" value="" type="text" class="input-mini" style="visibility:hidden">
         </div>
       </fieldset>
     </div>

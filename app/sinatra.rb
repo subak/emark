@@ -198,41 +198,70 @@ get "/" do
   end
 end
 
-get "/blog" do
+get "/blogs" do
   sleep 0.5
   select = db.blog.project(SqlLiteral.new "*")
   select.where(db.blog[:uid].eq @session[:uid])
   db.execute(select.to_sql).to_json
 end
 
-put "/blog/:id" do
-  params[:id]
+post "/blogs" do
+  params = JSON.parse(request.body.read)
+  pp params
+
+  raise Forbidden if env["rack.session"][:notebooks].!
+  notebooks    = env["rack.session"][:notebooks]
+  raise Forbidden if params["notebook"].!
+  notebook     = params["notebook"]
+  raise Forbidden if notebooks[notebook].!
+  notebookName = notebooks[notebook]
+  # raise Forbidden if params["domain"].!
+  # raise Forbidden if params["subdomain"].!
+  # blog_id      = params["subdomain"] + '.' + params["domain"]
+  bid          = params["bid"]
+  raise Forbidden if bid !~ /^(([0-9a-z]+[.-])+)?[0-9a-z]+$/
+  select = db.blog.project(db.blog[:bid])
+  select.where(db.blog[:bid].eq bid)
+  raise Forbidden if db.get_first_value(select.to_sql)
+
+  insert = db.blog.insert_manager
+  insert.insert([
+                  [db.blog[:bid],      bid],
+                  [db.blog[:uid],      @session[:uid]],
+                  [db.blog[:notebook], notebook],
+                  [db.blog[:title],    notebookName],
+                  [db.blog[:author],   bid]
+                ])
+  db.execute insert.to_sql
+
+  sleep 1
+  env["rack.session"][:notebooks] = nil
+
+  200
 end
 
-get "/dashboard" do
-  sleep 1
-
-  blogs = []
-  select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:uid].eq @session[:uid])
-
-  db.execute select.to_sql do |row|
-    blogs << row
+put "/blogs/:id" do |id|
+  params = JSON.parse(request.body.read)
+  update = UpdateManager.new Table.engine
+  update.table db.blog
+  update.where(db.blog[:uid].eq @session[:uid])
+  update.where(db.blog[:id].eq id)
+  update.set([
+               [db.blog[:title],    params["title"]],
+               [db.blog[:subtitle], params["subtitle"]],
+               [db.blog[:author],   params["author"]]
+             ])
+  db.transaction do
+    db.execute update.to_sql
+    raise Forbidden if (db.changes >= 1).!
   end
 
-  body({blogs: blogs}.to_json)
-end
-
-get "/config" do
-  select = db.blog.project(SqlLiteral.new "*")
-  select.where(db.blog[:uid].eq @session[:uid])
-
-  db.execute(select.to_sql).to_json
-end
-
-get "/open" do
   sleep 1
+  200
+end
 
+
+get "/notebooks" do
   notebooks = thread do
     noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{@session[:shard]}")
     noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
@@ -273,6 +302,31 @@ get "/open" do
   body data.to_json
 end
 
+
+
+
+
+get "/dashboard" do
+  sleep 1
+
+  blogs = []
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:uid].eq @session[:uid])
+
+  db.execute select.to_sql do |row|
+    blogs << row
+  end
+
+  body({blogs: blogs}.to_json)
+end
+
+get "/config" do
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:uid].eq @session[:uid])
+
+  db.execute(select.to_sql).to_json
+end
+
 ##
 # 設定
 get "/config/:blog_id" do |blog_id|
@@ -288,13 +342,15 @@ get "/config/:blog_id" do |blog_id|
 end
 
 ##
-# blogidのチェック
-get "/check/blogid/:blog_id" do |blog_id|
+# bidのチェック
+get "/check/bid" do
+  bid = params[:bid]
+  raise Forbidden if bid.!
   select = db.blog.project(db.blog[:bid])
-  select.where(db.blog[:bid].eq blog_id)
+  select.where(db.blog[:bid].eq bid)
   check = db.get_first_value select.to_sql
 
-  body({available: check.!}.to_json)
+  "#{check.!}"
 end
 
 post "/open" do
@@ -345,7 +401,7 @@ put "/config/:id" do |id|
     raise Forbidden if (db.changes >= 1).!
   end
 
-  sleep 3
+  sleep 1
   200
 end
 

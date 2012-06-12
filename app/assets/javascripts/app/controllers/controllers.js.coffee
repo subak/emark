@@ -41,35 +41,40 @@ class Controller.Config extends Spine.Controller
       else
         Model.Blog.fetch()
         Model.Blog.one "refresh", @render
+
   render: =>
     @blog = Model.Blog.findByAttribute("bid", @bid)
+    @stack.error.trigger "show" if not @blog
     @stack.loading.trigger "hide"
     @replace @view("config")(@)
     @el.modal "show"
+
   validationError: (rec, msg)=>
     console.log "validationErrorだよ"
 
-  updated: =>
-    @stack.loading.trigger "show"
-    @navigate "/dashboard"
   events:
-    "hidden":            "hidden"
     "click .nav-tabs a": "switch_tab"
+    "hidden":            "hidden"
     "submit form":       "submit"
-  hidden: ->
-    @stack.loading.trigger "show"
-    @navigate "/dashboard"
+
   switch_tab: (event)->
     event.preventDefault()
     $(event.currentTarget).tab("show")
+
+  hidden: ->
+    @stack.loading.trigger "show"
+    @navigate "/dashboard"
+
   submit: (event)->
     event.preventDefault()
-    Model.Config.url = "/config"
     blog = @blog.fromForm(event.currentTarget)
     blog.bind "ajaxSuccess", @updated
     blog.save()
     @el.modal "hide"
     @stack.loading.trigger "show"
+
+  updated: =>
+    @navigate "/dashboard"
 
 
 class Controller.Open extends Spine.Controller
@@ -77,11 +82,8 @@ class Controller.Open extends Spine.Controller
     @config = Emark.config
     super
     @active ->
-      if 1 <= Model.Notebook.count()
-        @delay((-> @render()), 500)
-      else
-        Model.Notebook.one "refresh", @render
-        Model.Notebook.fetch()
+      Model.Notebook.one "refresh", @render
+      Model.Notebook.fetch()
   render: =>
     @stack.loading.trigger "hide"
     @notebooks = Model.Notebook.all()
@@ -89,13 +91,38 @@ class Controller.Open extends Spine.Controller
     @el.modal "show"
   events:
     "hidden":      "hidden"
-    "submit form": "submit"
+    "shown":       "shown"
   hidden: ->
     @stack.loading.trigger "show"
     @navigate "/dashboard"
-  submit: (event)->
-    event.preventDefault()
 
+  new_blog: (form)=>
+    blog = Model.Blog.fromForm(form)
+    blog.one "ajaxSuccess", @updated
+    @el.modal "hide"
+    blog.save()
+
+  updated: =>
+    @stack.loading.trigger "show"
+    @navigate "/dashboard"
+
+  shown: ->
+    @$("form").submit (event)->
+      subdomain = $("input[name='subdomain']", this).val()
+      domain    = $("input[name='domain']", this).val()
+      bid       = "#{subdomain}.#{domain}"
+      console.log $("input[name='bid']", this)
+      $("input[name='bid']", this).val bid
+      $("input[name='url']", this).val "http://#{bid}/"
+    .validate
+      submitHandler: @new_blog
+      rules:
+        subdomain:
+          required: true
+        url:
+          url: true
+        bid:
+          remote: "/check/bid"
 
 class Controller.Redirect extends Spine.Controller
   constructor: ->
