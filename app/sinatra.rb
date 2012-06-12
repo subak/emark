@@ -198,6 +198,11 @@ get "/" do
   end
 end
 
+get "blog" do
+  params[:id]
+end
+
+
 get "/dashboard" do
   sleep 1
 
@@ -393,7 +398,7 @@ delete "/close/:bid" do |bid|
 end
 
 # 同期リクエスト
-put "/sync/:bid" do |bid|
+post "/sync/:bid" do |bid|
   select = db.blog.project(db.blog[:bid])
   select.where(db.blog[:uid].eq @session[:uid])
   select.where(db.blog[:bid].eq bid)

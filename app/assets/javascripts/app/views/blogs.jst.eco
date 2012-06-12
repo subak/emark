@@ -1,65 +1,66 @@
-      <div class="row">
-<% for blog in @blogs: %>
-  <div class="span4 blogs" data-tpl-block="blogs">
-    <section class="well">
-      <table style="height:250px;width:100%;">
-        <tbody>
-          <tr>
-            <td style="vertical-align:top;">
-              <h3><a href="http://<%= blog.bid %>/" target="_blank"><%= blog.title %></a></h3>
-            </td>
-          </tr>
-          <tr>
-            <td style="vertical-align:top;">
-              <p><%= blog.subtitle %></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="vertical-align:bottom;">
-              <p class="edit-success"><a href="/sync/<%= blog.bid %>" data-state="push" class="btn btn-warning" style="display:block;"><i class="icon-refresh icon-white"></i> 同期</a></p>
-              <p class="edit-success"><a href="/config/<%= blog.bid %>" data-state="push" class="btn btn-info config" style="display:block;"><i class="icon-cog icon-white"></i> 設定</a></p>
-              <p class="edit-danger"><a href="/close/<%= blog.bid %>" data-state="replace" class="btn btn-danger" style="display:block;" data-msg="削除したデータは元に戻せません。よろしいですか？"><i class="icon-trash icon-white"></i> 削除</a></p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+<div class="container" id="index-container">
+  <div class="row">
+    <% for blog in @blogs: %>
+    <div class="span4 blogs" data-tpl-block="blogs">
+      <section class="well">
+        <table style="height:250px;width:100%;">
+          <tbody>
+            <tr>
+              <td style="vertical-align:top;">
+                <h3><a href="http://<%= blog.bid %>/" target="_blank"><%= blog.title %></a></h3>
+              </td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;">
+                <p><%= blog.subtitle %></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="vertical-align:bottom;">
+                <p class="edit-success"><a href="/sync/<%= blog.bid %>" data-state="push" class="btn btn-warning sync" style="display:block;"><i class="icon-refresh icon-white"></i> 同期</a></p>
+                <p class="edit-success"><a href="/config/<%= blog.bid %>" data-state="push" class="btn btn-info config" style="display:block;"><i class="icon-cog icon-white"></i> 設定</a></p>
+                <p class="edit-danger"><a href="/close/<%= blog.bid %>" data-state="replace" class="btn btn-danger" style="display:block;" data-msg="削除したデータは元に戻せません。よろしいですか？"><i class="icon-trash icon-white"></i> 削除</a></p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <% end %>
+    <div class="span4">
+      <section class="well">
+        <table height="250px" width="100%">
+          <thead>
+            <tr>
+              <td>
+                <ul class="nav nav-tabs nav-stacked" style="background-color:white;">
+                  <li>
+                    <a href="http://hb.afl.rakuten.co.jp/hgc/0f77f894.0636ec06.0f77f895.19b8d4eb/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fgetplus%2f2245017%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fgetplus%2fi%2f11557540%2f" target="_blank">EVERNOTE プレミアムパック 1年版</a>
+                  </li>
+                  <li>
+                    <a href="http://hb.afl.rakuten.co.jp/hgc/0f77f9ea.f60ea7f6.0f77f9eb.07d0d7d9/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fsrcc%2fa1201e%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fsrcc%2fi%2f10000015%2f" target="_blank">保存するメモ帳 abrAsus Evernote バンドル版</a>
+                  </li>
+                  <li>
+                    <a href="http://hb.afl.rakuten.co.jp/hgc/0f77fa6e.7809d1ac.0f77fa6f.346e2d8c/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fbook%2f6588405%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fbook%2fi%2f13773205%2f" target="_blank">EVERNOTE「超」仕事術</a>
+                  </li>
+                </ul>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="vertical-align:bottom;">
+                <p id="open-blog"><a href="/open" class="btn btn-primary btn-large" style="display:block;" data-state="push"><i class="icon-pencil icon-white"></i> ブログを公開する</a></p>
+                <p id="edit-blogs" class="hidden">
+                  <button class="btn btn-danger" style="width:100%;"><i class="icon-wrench icon-white"></i> 編集</button>
+                  <button class="btn btn-success btn-large" style="width:100%;"><i class="icon-ok icon-white"></i> 完了</button>
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
   </div>
-<% end %>
-        <div class="span4">
-          <section class="well">
-            <table height="250px" width="100%">
-              <thead>
-                <tr>
-                  <td>
-                    <ul class="nav nav-tabs nav-stacked" style="background-color:white;">
-                      <li>
-                        <a href="http://hb.afl.rakuten.co.jp/hgc/0f77f894.0636ec06.0f77f895.19b8d4eb/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fgetplus%2f2245017%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fgetplus%2fi%2f11557540%2f" target="_blank">EVERNOTE プレミアムパック 1年版</a>
-                      </li>
-                      <li>
-                        <a href="http://hb.afl.rakuten.co.jp/hgc/0f77f9ea.f60ea7f6.0f77f9eb.07d0d7d9/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fsrcc%2fa1201e%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fsrcc%2fi%2f10000015%2f" target="_blank">保存するメモ帳 abrAsus Evernote バンドル版</a>
-                      </li>
-                      <li>
-                        <a href="http://hb.afl.rakuten.co.jp/hgc/0f77fa6e.7809d1ac.0f77fa6f.346e2d8c/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fbook%2f6588405%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fbook%2fi%2f13773205%2f" target="_blank">EVERNOTE「超」仕事術</a>
-                      </li>
-                    </ul>
-                  </td>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="vertical-align:bottom;">
-                    <p id="open-blog"><a href="/open" class="btn btn-primary btn-large" style="display:block;" data-state="push"><i class="icon-pencil icon-white"></i> ブログを公開する</a></p>
-                    <p id="edit-blogs" class="hidden">
-                      <button class="btn btn-danger" style="width:100%;"><i class="icon-wrench icon-white"></i> 編集</button>
-                      <button class="btn btn-success btn-large" style="width:100%;"><i class="icon-ok icon-white"></i> 完了</button>
-                    </p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </section>
-        </div>
-      </div>
-
+</div><!-- /container -->
 

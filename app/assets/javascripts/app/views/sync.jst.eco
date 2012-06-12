@@ -1,0 +1,16 @@
+<div class="modal fade">
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">x</a>
+    <h3>同期</h3>
+  </div>
+  <div class="modal-body">
+    <% if @model.queud: %>
+    <p class="alert alert-info">同期がスケジューリングされました。</p>
+    <% else: %>
+    <p class="alert">同期はすでにスケジューリングされています。更新が反映されるまでしばらくお待ち下さい。</p>
+    <% end %>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">閉じる</button>
+  </div>
+</div>
