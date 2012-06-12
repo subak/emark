@@ -31,8 +31,8 @@
 
         <div class="controls">
           <div class="input-prepend input-append">
-            <span class="add-on">http://</span><input class="input-medium" id="input-subdomain" type="text" name="subdomain" placeholder="サブドメイン"><span class="add-on">.${config:site_host}/</span>
-            <input type="hidden" name="domain" value="${config:site_host}">
+            <span class="add-on">http://</span><input class="input-medium" id="input-subdomain" type="text" name="subdomain" placeholder="サブドメイン"><span class="add-on">.<%= @config.site_host %>/</span>
+            <input type="hidden" name="domain" value="<%= @config.site_host %>">
           </div>
 
           <p class="help-block hidden" id="msg-domain-invalid">

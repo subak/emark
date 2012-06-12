@@ -317,14 +317,17 @@ post "/open" do
   200
 end
 
-put '/config/:blog_id' do |blog_id|
+put "/config/:id" do |id|
+  params = JSON.parse(request.body.read)
+
   update = UpdateManager.new Table.engine
   update.table db.blog
   update.where(db.blog[:uid].eq @session[:uid])
-  update.where(db.blog[:bid].eq blog_id)
+  update.where(db.blog[:id].eq id)
   update.set([
-               [db.blog[:title],  params["title"]],
-               [db.blog[:author], params["author"]]
+               [db.blog[:title],    params["title"]],
+               [db.blog[:subtitle], params["subtitle"]],
+               [db.blog[:author],   params["author"]]
              ])
   db.transaction do
     db.execute update.to_sql
@@ -334,6 +337,31 @@ put '/config/:blog_id' do |blog_id|
   sleep 3
   200
 end
+
+
+# put '/config/:bid' do |bid|
+#   pp params
+#   pp request
+#   payload = request.body.read
+#   data = JSON.parse(payload)
+#   pp data
+
+#   update = UpdateManager.new Table.engine
+#   update.table db.blog
+#   update.where(db.blog[:uid].eq @session[:uid])
+#   update.where(db.blog[:bid].eq bid)
+#   update.set([
+#                [db.blog[:title],  params["title"]],
+#                [db.blog[:author], params["author"]]
+#              ])
+#   db.transaction do
+#     db.execute update.to_sql
+#     raise Forbidden if (db.changes >= 1).!
+#   end
+
+#   sleep 3
+#   200
+# end
 
 # ブログを削除
 delete "/close/:bid" do |bid|
