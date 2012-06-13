@@ -1,9 +1,9 @@
 #= require config
 #= require json2
 #= require jquery
-#= require ./lib/spine
+#= require spine
 #= require spine/manager
-#= require ./lib/ajax
+#= require spine/ajax
 #= require spine/route
 
 #= require_tree ./lib

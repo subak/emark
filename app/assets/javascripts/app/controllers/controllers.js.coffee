@@ -1,24 +1,22 @@
 class Controller.Dashboard extends Spine.Controller
+  config: Emark.config
   events:
     "click #open-blog > a":     "navigate_to_open"
     "click a[class~='config']": "navigate_to_config"
     "click a[class~='sync']":   "sync"
     "click a[class~='delete']": "delete_blog"
-  constructor: ->
-    @config = Emark.config
-    super
-    @active ->
-      if 1 <= Model.Blog.count()
-        @render()
-      else
-        Model.Blog.fetch()
-        Model.Blog.one "refresh", @render
+
+  active: ->
+    if 1 <= Model.Blog.count()
+      @delay((=> @render()), 500)
+    else
+      Model.Blog.fetch()
+      Model.Blog.one "refresh", @render
+
   render: =>
     @blogs = Model.Blog.all()
-    @delay =>
-      @replace @view("blogs")(@)
-      @stack.loading.trigger "hide"
-    , 1000
+    @replace @view("blogs")(@)
+    @stack.loading.trigger "hide"
 
   navigate_to_open: =>
     event.preventDefault()
@@ -29,23 +27,28 @@ class Controller.Dashboard extends Spine.Controller
     event.preventDefault()
     @stack.loading.trigger "show"
     @navigate $(event.currentTarget).attr("href")
+
   sync: (event)=>
     event.preventDefault()
     @stack.loading.trigger "show"
     @navigate $(event.currentTarget).attr("href")
+
   delete_blog: (event)=>
     event.preventDefault()
-    @stack.loading.trigger "show"
-    @navigate $(event.currentTarget).attr("href")
+    if confirm($(event.currentTarget).data('msg'))
+      @stack.loading.trigger "show"
+      @navigate $(event.currentTarget).attr("href")
+
 
 class Controller.Close extends Spine.Controller
   active: (params)->
-      blog = Model.Blog.findByAttribute("bid", params.bid)
-      return @stack.error.trigger("show") if not blog
-      blog.one "ajaxSuccess", @destroyed
-      blog.destroy()
+    blog = Model.Blog.findByAttribute("bid", params.bid)
+    return @stack.error.trigger("show") if not blog
+    blog.destroy()
+    blog.one "ajaxSuccess", @destroyed
   destroyed: =>
     @navigate "/dashboard"
+
 
 class Controller.Config extends Spine.Controller
   constructor: ->
@@ -87,11 +90,10 @@ class Controller.Config extends Spine.Controller
     blog = @blog.fromForm(event.currentTarget)
     blog.one "ajaxSuccess", @updated
     blog.save()
-    @el.modal "hide"
     @stack.loading.trigger "show"
 
   updated: =>
-    @navigate "/dashboard"
+    @el.modal "hide"
 
 
 class Controller.Open extends Spine.Controller
@@ -101,14 +103,17 @@ class Controller.Open extends Spine.Controller
     @active ->
       Model.Notebook.one "refresh", @render
       Model.Notebook.fetch()
+
   render: =>
     @stack.loading.trigger "hide"
     @notebooks = Model.Notebook.all()
     @replace @view("open")(@)
     @el.modal "show"
+
   events:
     "hidden":      "hidden"
     "shown":       "shown"
+
   hidden: ->
     @stack.loading.trigger "show"
     @navigate "/dashboard"
@@ -116,19 +121,17 @@ class Controller.Open extends Spine.Controller
   new_blog: (form)=>
     blog = Model.Blog.fromForm(form)
     blog.one "ajaxSuccess", @updated
-    @stack.loading.trigger "show"
-    @el.modal "hide"
     blog.save()
+    @stack.loading.trigger "show"
 
   updated: (blog)=>
-    @navigate "/dashboard"
+    @el.modal "hide"
 
   shown: ->
     @$("form").submit (event)->
       subdomain = $("input[name='subdomain']", this).val()
       domain    = $("input[name='domain']", this).val()
       bid       = "#{subdomain}.#{domain}"
-      console.log $("input[name='bid']", this)
       $("input[name='bid']", this).val bid
       $("input[name='url']", this).val "http://#{bid}/"
     .validate
@@ -141,18 +144,17 @@ class Controller.Open extends Spine.Controller
         bid:
           remote: "/check/bid"
 
+
 class Controller.Redirect extends Spine.Controller
-  constructor: ->
-    super
-    @active ->
-      $.ajax
-        url:      "/"
-        data:     location.search.substr 1
-        dataType: 'text'
-      .fail =>
-        @trigger 'reject'
-      .done ( redirect ) =>
-        location.href = redirect   
+  active: ->
+    $.ajax
+      url:      "/"
+      data:     location.search.substr 1
+      dataType: 'text'
+    .fail =>
+      @stack.error.trigger "show"
+    .done ( redirect ) =>
+      location.href = redirect   
 
 
 class Controller.Sync extends Spine.Controller
@@ -164,12 +166,15 @@ class Controller.Sync extends Spine.Controller
       @model = Model.Sync.create()
       @model.one "ajaxSuccess", @render
     super
+
   render: =>
     @stack.loading.trigger "hide"
     @replace @view("sync")(@)
     @el.modal "show"
+
   events:
     "hidden": "hidden"
+
   hidden: =>
     @stack.loading.trigger "show"
     @navigate "/dashboard"
@@ -178,16 +183,13 @@ class Controller.Sync extends Spine.Controller
 class Controller.Loading extends Spine.Controller
   constructor: ->
     @el = @view("loading")()
-    @bind "hide", ->
-      @el.fadeOut()
-    @bind "show", ->
-      @el.show()
+    @bind "hide", -> @el.fadeOut()
+    @bind "show", -> @el.show()
     super
 
 
 class Controller.Error extends Spine.Controller
   constructor: ->
     @el = @view("error")()
-    @bind "show", ->
-      @el.show()
+    @bind "show", -> @el.show()
     super

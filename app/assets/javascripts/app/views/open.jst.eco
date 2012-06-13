@@ -52,9 +52,9 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn" data-dismiss="modal">キャンセル</button>
-      <button type="submit" class="btn btn-primary" data-msg-confirm="ノートブックとブログのURLは一度公開すると変更できません。
-  入力した内容で公開してよろしいですか？">ブログを公開する</button>
+      <button type="submit" class="btn btn-primary pull-right" data-msg-confirm="ノートブックとブログのURLは一度公開すると変更できません。
+  入力した内容で公開してよろしいですか？" style="margin-left:10px;">ブログを公開する</button>
+      <button class="btn pull-right" data-dismiss="modal">キャンセル</button>
     </div>
   </form>
 
