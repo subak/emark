@@ -112,6 +112,8 @@ end
 ##
 # routing
 #
+
+# token
 get "/" do
   if oauthVerifier = request.params['oauth_verifier']
     ##
@@ -198,12 +200,14 @@ get "/" do
   end
 end
 
+
 get "/blogs" do
   sleep 0.5
   select = db.blog.project(SqlLiteral.new "*")
   select.where(db.blog[:uid].eq @session[:uid])
   db.execute(select.to_sql).to_json
 end
+
 
 post "/blogs" do
   params = JSON.parse(request.body.read)
@@ -247,6 +251,7 @@ post "/blogs" do
   }.to_json
 end
 
+
 put "/blogs/:id" do |id|
   params = JSON.parse(request.body.read)
   update = UpdateManager.new Table.engine
@@ -267,6 +272,7 @@ put "/blogs/:id" do |id|
   200
 end
 
+
 delete "/blogs/:id" do |id|
   delete = DeleteManager.new Table.engine
   delete.from db.blog
@@ -281,6 +287,7 @@ delete "/blogs/:id" do |id|
   sleep 1
   200
 end
+
 
 get "/notebooks" do
   notebooks = thread do
@@ -320,8 +327,9 @@ get "/notebooks" do
   end
   env["rack.session"][:notebooks] = availables
 
-  body data.to_json
+  body data[:notebooks].to_json
 end
+
 
 ##
 # bidのチェック
@@ -334,6 +342,7 @@ get "/check/bid" do
 
   "#{check.!}"
 end
+
 
 # ブログを削除
 delete "/close/:bid" do |bid|
@@ -364,8 +373,9 @@ delete "/close/:bid" do |bid|
   200
 end
 
+
 # 同期リクエスト
-post "/sync/:bid" do |bid|
+get "/sync/:bid" do |bid|
   select = db.blog.project(db.blog[:bid])
   select.where(db.blog[:uid].eq @session[:uid])
   select.where(db.blog[:bid].eq bid)
@@ -389,10 +399,16 @@ post "/sync/:bid" do |bid|
   end
 
   sleep 1
-  {queued: queued}.to_json
+  {
+    id:     bid,
+    queued: queued
+  }.to_json
 end
 
-delete "/logout" do
+
+delete "/logout/:sid" do |sid|
+  raise Fatal if @session[:sid] != sid
+
   delete = DeleteManager.new Table.engine
   delete.from db.session
   delete.where(db.session[:uid].eq @session[:uid])
@@ -401,8 +417,11 @@ delete "/logout" do
     raise Forbidden if (db.changes >= 1).!
   end
 
-  config.site_href
+  {
+    location: config.site_href
+  }.to_json
 end
+
 
 def sleep wait
   fb = Fiber.current
@@ -412,6 +431,7 @@ def sleep wait
   end
   Fiber.yield
 end
+
 
 def thread &block
   fb = Fiber.current

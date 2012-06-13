@@ -2,7 +2,7 @@
 
 jasmine.getFixtures()
 
-describe "hoge", ->
+xdescribe "hoge", ->
   TestController = null
   beforeEach ->
     class TestController extends Spine.Controller

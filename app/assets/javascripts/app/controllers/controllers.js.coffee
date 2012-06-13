@@ -1,3 +1,15 @@
+class Controller.Token extends Spine.Controller
+  active: ->
+    $.ajax
+      url:      "/"
+      data:     location.search.substr 1
+      dataType: 'text'
+    .fail =>
+      @stack.error.trigger "show"
+    .done ( redirect ) =>
+      location.href = redirect   
+
+
 class Controller.Dashboard extends Spine.Controller
   config: Emark.config
   events:
@@ -5,6 +17,15 @@ class Controller.Dashboard extends Spine.Controller
     "click a[class~='config']": "navigate_to_config"
     "click a[class~='sync']":   "sync"
     "click a[class~='delete']": "delete_blog"
+    "click .btn-danger":        "switch_to_edit_mode"
+    "click .btn-success":       "switch_to_normal_mode"
+
+  elements:
+    "#edit-blogs":   "edit_blogs"
+    ".edit-danger":  "edit_danger"
+    ".edit-success": "edit_success"
+    "#edit-blogs .btn-danger":   "btn_danger"
+    "#edit-blogs .btn-success":  "btn_success"
 
   active: ->
     if 1 <= Model.Blog.count()
@@ -16,7 +37,10 @@ class Controller.Dashboard extends Spine.Controller
   render: =>
     @blogs = Model.Blog.all()
     @replace @view("blogs")(@)
+    @refreshElements()
+
     @stack.loading.trigger "hide"
+    @attach_edit()
 
   navigate_to_open: =>
     event.preventDefault()
@@ -39,70 +63,86 @@ class Controller.Dashboard extends Spine.Controller
       @stack.loading.trigger "show"
       @navigate $(event.currentTarget).attr("href")
 
+  attach_edit: =>
+    @edit_danger.hide()
+    if 0 != @blogs.length
+      @edit_blogs.removeClass("hidden")
+      @btn_success.hide()
 
-class Controller.Close extends Spine.Controller
-  active: (params)->
-    blog = Model.Blog.findByAttribute("bid", params.bid)
-    return @stack.error.trigger("show") if not blog
-    blog.destroy()
-    blog.one "ajaxSuccess", @destroyed
-  destroyed: =>
-    @navigate "/dashboard"
+  switch_to_edit_mode: =>
+    @edit_success.hide()
+    @edit_danger.show()
+    @btn_success.show()
+    @btn_danger.hide()
+
+  switch_to_normal_mode: =>
+    @edit_success.show()
+    @edit_danger.hide()
+    @btn_success.hide()
+    @btn_danger.show()
 
 
 class Controller.Config extends Spine.Controller
-  constructor: ->
-    @config = Emark.Config
-    super
-    @active (params)->
-      @bid = params.bid
-      if Model.Blog.findByAttribute("bid", @bid)
-        @delay((=> @render()), 500)
-      else
-        Model.Blog.fetch()
-        Model.Blog.one "refresh", @render
+  config: Emark.config
+  active: (params)->
+    @bid = params.bid
+    if Model.Blog.findByAttribute("bid", @bid)
+      @delay((=> @render()), 500)
+    else
+      Model.Blog.fetch()
+      Model.Blog.one "refresh", @render
 
   render: =>
     @blog = Model.Blog.findByAttribute("bid", @bid)
-    @stack.error.trigger "show" if not @blog
-    @stack.loading.trigger "hide"
+    @trigger "fatal" if not @blog
+    @trigger "loaded"
     @replace @view("config")(@)
     @el.modal "show"
 
-  validationError: (rec, msg)=>
-    console.log "validationErrorだよ"
-
   events:
     "click .nav-tabs a": "switch_tab"
-    "hidden":            "hidden"
     "submit form":       "submit"
+    "hide":              "hide"
+    "hidden":            "hidden"
+  hide:   => @trigger "loading"
+  hidden: => @navigate "/dashboard"
 
   switch_tab: (event)->
     event.preventDefault()
     $(event.currentTarget).tab("show")
 
-  hidden: ->
-    @stack.loading.trigger "show"
-    @navigate "/dashboard"
-
   submit: (event)->
     event.preventDefault()
     blog = @blog.fromForm(event.currentTarget)
-    blog.one "ajaxSuccess", @updated
     blog.save()
-    @stack.loading.trigger "show"
+    blog.one "ajaxSuccess", => @el.modal "hide"
+    @trigger "loading"
 
-  updated: =>
-    @el.modal "hide"
+class Controller.Sync extends Spine.Controller
+  active: (params)->
+    @bid = params.bid
+    Model.Sync.one "refresh", @render
+    Model.Sync.fetch(id: @bid)
+
+  render: =>
+    @model = Model.Sync.find(@bid)
+    @trigger "fatal" if not @model
+    @replace @view("sync")(@)
+    @el.modal "show"
+    @trigger "loaded"
+
+  events:
+    "hide":   "hide"
+    "hidden": "hidden"
+  hide:   => @trigger "loading"
+  hidden: => @navigate "/dashboard"
 
 
 class Controller.Open extends Spine.Controller
-  constructor: ->
-    @config = Emark.config
-    super
-    @active ->
-      Model.Notebook.one "refresh", @render
-      Model.Notebook.fetch()
+  config: Emark.config
+  active: ->
+    Model.Notebook.one "refresh", @render
+    Model.Notebook.fetch()
 
   render: =>
     @stack.loading.trigger "hide"
@@ -145,40 +185,24 @@ class Controller.Open extends Spine.Controller
           remote: "/check/bid"
 
 
-class Controller.Redirect extends Spine.Controller
+class Controller.Close extends Spine.Controller
+  active: (params)->
+    blog = Model.Blog.findByAttribute("bid", params.bid)
+    return @stack.error.trigger("show") if not blog
+    blog.destroy()
+    blog.one "ajaxSuccess", @destroyed
+  destroyed: => @navigate "/dashboard"
+
+
+class Controller.Logout extends Spine.Controller
+  config: Emark.config
   active: ->
-    $.ajax
-      url:      "/"
-      data:     location.search.substr 1
-      dataType: 'text'
-    .fail =>
-      @stack.error.trigger "show"
-    .done ( redirect ) =>
-      location.href = redirect   
-
-
-class Controller.Sync extends Spine.Controller
-  constructor: ->
-    @model = {}
-    @el    = @view("sync")(@)
-    @active (params)->
-      Model.Sync.url = "/sync/#{params.bid}"
-      @model = Model.Sync.create()
-      @model.one "ajaxSuccess", @render
-    super
-
-  render: =>
-    @stack.loading.trigger "hide"
-    @replace @view("sync")(@)
-    @el.modal "show"
-
-  events:
-    "hidden": "hidden"
-
-  hidden: =>
-    @stack.loading.trigger "show"
-    @navigate "/dashboard"
-
+    session = new Model.Session id: $.cookie("sid")
+    session.destroy()
+    session.one "ajaxSuccess", @logouted
+  logouted: =>
+    location.href = @config.site_href
+    
 
 class Controller.Loading extends Spine.Controller
   constructor: ->
