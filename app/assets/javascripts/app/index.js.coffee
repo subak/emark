@@ -21,7 +21,7 @@ Manager    = @Manager    = {}
 class App extends Spine.Controller
   config: Emark.Config
   constructor: ->
-    @el = $("body")
+    @el = $("#app")
     super
 
     Model.Blog.bind     "ajaxError", @ajaxError
@@ -48,9 +48,8 @@ class App extends Spine.Controller
   ajaxError: (record, xhr, settings, error)=>
     # console.log record
     # console.log xhr
-    # console.log settings
-    # console.log error
-    console.log "error"
+    console.log settings
+    console.log error
     @pages.error.trigger "show"
   events:
     "click a[href$='/logout']": "logout"

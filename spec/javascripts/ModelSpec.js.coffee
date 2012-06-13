@@ -7,7 +7,7 @@ new App
 #   url: ->
 #     "/hogehuga"
 
-describe "Model.Sync", ->
+xdescribe "Model.Sync", ->
   # beforeEach ->
   #   @server = sinon.fakeServer.create()
   # afterEach ->

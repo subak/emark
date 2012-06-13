@@ -5,7 +5,7 @@ class Controller.Token extends Spine.Controller
       data:     location.search.substr 1
       dataType: 'text'
     .fail =>
-      @stack.error.trigger "show"
+      @trigger "forbidden"
     .done ( redirect ) =>
       location.href = redirect   
 
@@ -21,11 +21,11 @@ class Controller.Dashboard extends Spine.Controller
     "click .btn-success":       "switch_to_normal_mode"
 
   elements:
-    "#edit-blogs":   "edit_blogs"
-    ".edit-danger":  "edit_danger"
-    ".edit-success": "edit_success"
-    "#edit-blogs .btn-danger":   "btn_danger"
-    "#edit-blogs .btn-success":  "btn_success"
+    "#edit-blogs":              "edit_blogs"
+    ".edit-danger":             "edit_danger"
+    ".edit-success":            "edit_success"
+    "#edit-blogs .btn-danger":  "btn_danger"
+    "#edit-blogs .btn-success": "btn_success"
 
   active: ->
     if 1 <= Model.Blog.count()
@@ -38,9 +38,8 @@ class Controller.Dashboard extends Spine.Controller
     @blogs = Model.Blog.all()
     @replace @view("blogs")(@)
     @refreshElements()
-
-    @stack.loading.trigger "hide"
     @attach_edit()
+    @trigger "loaded"
 
   navigate_to_open: =>
     event.preventDefault()
@@ -117,6 +116,7 @@ class Controller.Config extends Spine.Controller
     blog.save()
     blog.one "ajaxSuccess", => @el.modal "hide"
     @trigger "loading"
+
 
 class Controller.Sync extends Spine.Controller
   active: (params)->

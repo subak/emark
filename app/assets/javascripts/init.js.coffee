@@ -18,4 +18,4 @@ class Manager.Pages extends Spine.Stack
     "/sync/:bid":   "sync"
     "/logout":      "logout"
 
-Emark.app = new App
+#Emark.app = new App
