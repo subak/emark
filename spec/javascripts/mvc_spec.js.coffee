@@ -38,29 +38,51 @@ describe "token", ->
     expect($("#error")).not.toBeHidden
 
 
-describe "dashbaord", ->
+describe "dashboard", ->
   beforeEach ->
     jasmine.getFixtures().set(html)
-    @server    = sinon.fakeServer.create()
     @dashboard = Emark.app.pages.dashboard
-
-  afterEach ->
-    @server.restore()
-
-  it "should", ->
+    @server    = sinon.fakeServer.create()
     @server.respondWith "GET", "/blogs", [
       200,
       "Content-Type": "application/json"
       ,'[{"id":1, "title":"title", "bid":"test.example.com"}]'
     ]
-
     @dashboard.active()
     @server.respond()
 
+  afterEach ->
+    jasmine.getFixture().cleanUp()
+    @server.restore()
+
+  it "should create blog-table", ->
     expect($(".blog-table").size()).toEqual 1
     expect($(".blog-table h3 a")).toHaveAttr "href", "http://test.example.com/"
 
-    @dashboard.switch_to_edit_mode()
-    expect(@dashboard.edit_success).toBeHidden()
-    expect(@dashboard.edit_danger).not.toBeHidden()
+  # it "shouldcreate blog-table", ->
+  #   expect($(".blog-table").size()).toEqual 1
+  #   expect($(".blog-table h3 a")).toHaveAttr "href", "http://test.example.com/"
+
+  # it "should correct response", ->
+  #   @dashboard.switch_to_edit_mode()
+  #   expect(@dashboard.edit_success).toBeHidden()
+  #   expect(@dashboard.edit_danger).not.toBeHidden()
+
+
+  # it "should", ->
+  #   @server.respondWith "GET", "/blogs", [
+  #     200,
+  #     "Content-Type": "application/json"
+  #     ,'[{"id":1, "title":"title", "bid":"test.example.com"}]'
+  #   ]
+
+  #   @dashboard.active()
+  #   @server.respond()
+
+  #   expect($(".blog-table").size()).toEqual 1
+  #   expect($(".blog-table h3 a")).toHaveAttr "href", "http://test.example.com/"
+
+  #   @dashboard.switch_to_edit_mode()
+  #   expect(@dashboard.edit_success).toBeHidden()
+  #   expect(@dashboard.edit_danger).not.toBeHidden()
 
