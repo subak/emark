@@ -2,9 +2,6 @@
 
 module Emark
   module Publish
-    class Empty < Exception; end
-    class Fatal < Exception; end
-
     class Blog
       attr_accessor :db, :logger, :bid
 

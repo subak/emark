@@ -94,3 +94,23 @@ desc "jspec"
 task:jspec do
   sh "bundle exec jasmine-headless-webkit -c"
 end
+
+desc "rspec:publish:entry"
+namespace :rspec do
+  namespace :publish do
+    task :entry do
+      require "pp"
+      require "rb-fsevent"
+      fsevent = FSEvent.new
+      fsevent.watch ["spec/publish", "app/workers"], ["--latency", "1.5"] do
+        begin
+          sh "rspec spec/publish/entry_spec.rb -cfs"
+        rescue Exception => e
+          pp e.backtrace
+        end
+      end
+      fsevent.run
+    end
+  end
+end
+

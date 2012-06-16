@@ -16,6 +16,11 @@ group :http do
   gem "sinatra"
 end
 
+group :publish do
+  gem "nokogiri"
+end
+
+
 group :sprockets do
   gem "rails"
   gem "eco"
@@ -25,19 +30,24 @@ group :sprockets do
   gem "jquery-rails"
 end
 
-group :cli do
+group :test do
   gem "rack-test", :require => "rack/test"
+end
+
+group :cli do
   gem "standalone_migrations"
   gem "thin"
-  gem "rspec"
+
+  gem "watchr"
+
   gem "simplecov"
-  gem "rb-fsevent"
-  gem "guard-shell"
+  gem "rspec"
   gem "jasmine"
   gem "jasmine-headless-webkit"
+  gem "rb-fsevent"
+  gem "guard"
+  gem "guard-shell"
+  gem "guard-rspec"
   gem "guard-jasmine-headless-webkit"
 end
 
-group :publich do
-  gem "nokogiri"
-end

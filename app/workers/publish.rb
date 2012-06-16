@@ -76,6 +76,22 @@ def run
   end
 end
 
+
+module Emark
+  module Publish
+    class Empty < Exception; end
+    class Fatal < Exception; end
+
+    def db
+      Vars[:db]
+    end
+
+    def logger
+      Vars[:logger]
+    end
+  end
+end
+
 EM.run do
   EM.add_periodic_timer do
     run do

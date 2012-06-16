@@ -63,6 +63,21 @@ Vars = {}
 Vars[:db]     = db
 Vars[:logger] = logger
 
+module Emark
+  module Publish
+    class Empty < Exception; end
+    class Fatal < Exception; end
+
+    def db
+      Vars[:db]
+    end
+
+    def logger
+      Vars[:logger]
+    end
+  end
+end
+
 module Helper
   def db
     Vars[:db]
@@ -118,6 +133,8 @@ module Helper
   end
 
   def delete_sync
-
+    delete = DeleteManager.new Table.engine
+    delete.from db.sync
+    db.execute delete.to_sql
   end
 end
