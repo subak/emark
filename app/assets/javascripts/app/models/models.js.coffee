@@ -4,7 +4,7 @@ class Model.Blog extends Spine.Model
 
 class Model.Notebook extends Spine.Model
   @configure "Notebook", "notebookGuid", "notebookName", "available"
-  @extend    Spine.Model.Ajax
+  @extend Spine.Model.Ajax
 
 class Model.Sync extends Spine.Model
   @configure "Sync", "queued"

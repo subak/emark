@@ -40,6 +40,8 @@ group :cli do
 
   gem "watchr"
 
+  gem "haml_coffee_assets"
+
   gem "simplecov"
   gem "rspec"
   gem "jasmine"
@@ -49,5 +51,6 @@ group :cli do
   gem "guard-shell"
   gem "guard-rspec"
   gem "guard-jasmine-headless-webkit"
+  gem "guard-haml"
 end
 

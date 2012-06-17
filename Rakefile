@@ -135,3 +135,29 @@ namespace :rspec do
   end
 end
 
+
+desc "haml"
+task :haml do
+  begin
+    require "pp"
+    require "rb-fsevent"
+    require "haml"
+    require "./config/environment"
+  rescue LoadError
+    puts "rspec:publish can't load rb-fsevent"
+  end
+
+
+  fsevent = FSEvent.new
+  fsevent.watch ["app/assets"] do
+    begin
+      File.open "public/emark.jp/development.html", "w" do |fp|
+        fp.write Haml::Engine.new(File.read("app/assets/dashboard.haml"), :format => :html5).to_html
+        puts "write"
+      end
+    rescue Exception => e
+      pp e.backtrace
+    end
+  end
+  fsevent.run
+end
