@@ -241,33 +241,45 @@ describe Emark::Publish::Entry do
       @entry_q.run.should == :empty
     end
 
-    it "run" do
-      delete_entry_q
-      delete_blog
-      delete_sync
-      get_session
-      bid = "test.example.com"
+    describe "ok" do
+      before:all do
+        delete_entry_q
+        delete_blog
+        delete_sync
+        get_session
 
-      guid = get_real_guid @session[:authtoken], @session[:shard]
-      eid  = Subak::Utility.shorten_hash(guid.gsub("-", "").slice(0, 4))
+        @bid  = "test.example.com"
+        @guid = get_real_guid @session[:authtoken], @session[:shard]
+        @eid  = Subak::Utility.shorten_hash(@guid.gsub("-", "").slice(0, 4))
 
-      insert = db.blog.insert_manager
-      insert.insert([
-                      [db.blog[:uid], @session[:uid]],
-                      [db.blog[:bid], bid]
-                    ])
-      db.execute insert.to_sql
+        insert = db.blog.insert_manager
+        insert.insert([
+                        [db.blog[:uid], @session[:uid]],
+                        [db.blog[:bid], @bid]
+                      ])
+        db.execute insert.to_sql
 
-      insert = db.entry_q.insert_manager
-      insert.insert([
-                      [db.entry_q[:note_guid], guid],
-                      [db.entry_q[:updated],   Time.now.to_f * 1000],
-                      [db.entry_q[:bid],       bid],
-                      [db.entry_q[:queued],    Time.now.to_f]
-                    ])
-      db.execute insert.to_sql
+        insert = db.entry_q.insert_manager
+        insert.insert([
+                        [db.entry_q[:note_guid], @guid],
+                        [db.entry_q[:updated],   Time.now.to_f * 1000],
+                        [db.entry_q[:bid],       @bid],
+                        [db.entry_q[:queued],    Time.now.to_f]
+                      ])
+        db.execute insert.to_sql
+      end
 
-      @entry_q.run
+      it "through" do
+        @entry_q.run
+      end
+
+      it "delete" do
+        @entry_q.step_2_1(@guid, @eid, @bid).should be_true
+      end
+
+      it "recover" do
+        @entry_q.step_2_2(@guid, @eid, @bid).should be_true
+      end
     end
   end
 end

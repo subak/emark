@@ -7,6 +7,11 @@ module Emark
       class Recover < Exception; end
 
       module Helper
+        def alias_path bid, eid, extension
+          file = File.join(config.public_blog, bid.slice(0, 2), bid, eid)
+          "#{file}.#{extension}"
+        end
+
         def save_file_path dirname, note_guid, extension
           dirname   = dirname.to_s
           extension = extension.to_s
@@ -25,13 +30,9 @@ module Emark
           content
         end
       end
-
       include Helper
 
-      attr_accessor :entry, :session
-
       def run
-
         # step_1
         entry =
           begin
@@ -49,12 +50,11 @@ module Emark
           step_2 guid, updated
         rescue Delete
           step_2_1 guid, eid, bid
-          logger.info "Emark::Publish::Entry Delete"
+          logger.info "Emark::Publish::Entry#delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
           return :delete
-
         rescue Recover
-
-          logger.info "Emark::Publish::Entry Recover"
+          step_2_2 guid, eid, bid
+          logger.info "Emark::Publish::Entry#recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
           return :recover
         end
 
@@ -91,7 +91,7 @@ module Emark
         # step_11
         step_11 guid
 
-        logger.info "Emark::Publish::Entry bid:#{bid}, eid:#{eid}, guid:#{guid}"
+        logger.info "Emark::Publish::Entry#run bid:#{bid}, eid:#{eid}, guid:#{guid}"
         true
       end
 
@@ -140,6 +140,7 @@ module Emark
         json = file + ".json"
         html = file + ".html"
 
+        # errorの可能性
         File.unlink json
         File.unlink html
 
@@ -149,14 +150,62 @@ module Emark
                      [db.sync[:deleted], 1]
                    ])
         update.where(db.sync[:note_guid].eq guid)
+        db.transaction do
+          db.execute update.to_sql
+          raise Fatal if 1 != db.changes
+        end
 
         true
       end
 
       # recover
-      def step_2_2
+      def step_2_2 guid, eid, bid
+        org_json = save_file_path :entry, guid, :json
+        org_html = save_file_path :entry, guid, :html
 
+        ali_json = alias_path bid, eid, :json
+        ali_html = alias_path bid, eid, :html
+
+        FileUtils.mkdir_p File.dirname(ali_json)
+
+        # errorの可能性
+        File.symlink org_json, ali_json
+        File.symlink org_html, ali_html
+
+        update = UpdateManager.new Table.engine
+        update.table db.sync
+        update.set([
+                     [db.sync[:deleted], 0],
+                     [db.sync[:bid],     bid]
+                   ])
+        update.where(db.sync[:note_guid].eq guid)
+        db.transaction do
+          db.execute update.to_sql
+          raise Fatal if 1 != db.changes
+        end
+
+        true
       end
+
+      # 回復
+      # DBのフラグを元に戻す
+      # エイリアスを作成する
+      def recover
+        old  = "%s/files/entry/%s/%s" % [PROJECT_ROOT, @guid.slice(0,2), @guid]
+        hash = Subak::Utility.shorten_hash(@guid.gsub '-', '')
+        new  = "%s/_/%s/%s/%s" % [PUBLIC_ROOT, @blogid.slice(0,2), @blogid, hash.slice(0,4)]
+
+        FileUtils.mkdir_p File.dirname(new)
+
+        File.symlink "#{old}.json", "#{new}.json" if File.exists?("#{new}.json").!
+        File.symlink "#{old}.html", "#{new}.html" if File.exists?("#{new}.html").!
+
+        @db.execute @ext.sql_publish(:recover), @blogid, @guid
+
+        @logger.info("Everblog::Publish::Entry => recover blogid:#{@blogid}, guid:#{@guid};")
+      end
+
+
 
       def step_3 bid
         select = db.session.project(db.session[:authtoken], db.session[:shard])
