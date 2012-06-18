@@ -4,6 +4,7 @@ require "fiber"
 require "pp"
 require "logger"
 require "yaml"
+require "digest"
 require "bundler"
 Bundler.require :default, :publish
 
@@ -14,6 +15,8 @@ require 'limits_constants'
 require "user_store"
 require "user_store_constants.rb"
 require "errors_types.rb"
+
+require "subak/utility"
 
 require "./lib/override/sqlite3"
 require "./config/environment"

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120605211646) do
+ActiveRecord::Schema.define(:version => 20120618191212) do
 
   create_table "blog", :force => true do |t|
     t.text    "bid",      :default => "", :null => false
@@ -64,6 +64,7 @@ ActiveRecord::Schema.define(:version => 20120605211646) do
     t.integer "updated"
     t.integer "deleted",   :default => 0, :null => false
     t.text    "bid"
+    t.text    "eid"
   end
 
   add_index "sync", ["note_guid"], :name => "index_sync_on_note_guid", :unique => true

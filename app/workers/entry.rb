@@ -6,6 +6,28 @@ module Emark
       class Delete < Exception; end
       class Recover < Exception; end
 
+      module Helper
+        def save_file_path dirname, note_guid, extension
+          dirname   = dirname.to_s
+          extension = extension.to_s
+          dir  = File.join config.root, "files", dirname, note_guid.slice(0,2)
+          file_name = note_guid + "." + extension
+
+          File.join(dir, file_name)
+        end
+
+        def save_file dirname, note_guid, extension, content
+          file = save_file_path dirname, note_guid, extension
+          FileUtils.mkdir_p File.dirname(file)
+          File.open file, "w" do |fp|
+            fp.write content
+          end
+          content
+        end
+      end
+
+      include Helper
+
       attr_accessor :entry, :session
 
       def run
@@ -109,6 +131,95 @@ module Emark
 
         doc.text
       end
+
+      ##
+      # markdownをディスクへ書き出し
+      def step_6 guid, markdown
+        save_file :markdown, guid, :markdown, markdown
+      end
+
+      ##
+      # jsonを作成
+      def step_7 guid, eid, markdown, title, created, updated
+        json = {
+          eid:      eid,
+          title:    title,
+          created:  Time.at(created/1000).utc.iso8601,
+          updated:  Time.at(updated/1000).utc.iso8601,
+          markdown: markdown
+        }
+
+        save_file :entry, guid, :json, json.to_json
+      end
+
+      ##
+      # 検索エンジン用のhtml
+      def step_8 guid, markdown, title
+        rDiscount = RDiscount.new markdown
+        haml = <<HAML
+!!!
+%html
+  %head
+    %meta{charset: "utf-8"}
+    %title= title
+  %body
+    %h1= title
+    = html
+HAML
+
+        html = Haml::Engine.new(haml, format: :html5).
+          to_html(self,
+             title: title,
+             html:  rDiscount.to_html)
+        save_file(:entry, guid, :html, html)
+      end
+
+      def step_9 guid, eid, bid
+        old = File.dirname save_file_path(:entry, guid, :dummy)
+        new = File.join config.public_blog, bid.slice(0,2), bid, eid
+        FileUtils.mkdir_p File.dirname(new)
+        File.symlink "#{old}.json", "#{new}.json" if File.symlink?("#{new}.json").!
+        File.symlink "#{old}.html", "#{new}.html" if File.symlink?("#{new}.html").!
+        true
+      end
+
+      # step 10
+      # syncテーブルを更新
+      def step_10 guid, eid, bid, title, created, updated
+        data = [
+          [db.sync[:note_guid], guid],
+          [db.sync[:eid],       eid],
+          [db.sync[:bid],       bid],
+          [db.sync[:title],     title],
+          [db.sync[:created],   created],
+          [db.sync[:updated],   updated],
+          [db.sync[:deleted],   0]
+        ]
+
+        catch :insert do
+          begin
+            insert = db.sync.insert_manager
+            insert.insert data
+            db.execute insert.to_sql
+          rescue SQLite3::ConstraintException
+          else
+            throw :insert
+          end
+
+          update = UpdateManager.new Table.engine
+          update.table db.sync
+          update.set data
+          db.execute update.to_sql
+        end
+
+        true
+      end
+
+
+
+#        @logger.info("Everblog::Publish::Entry => blogid:#{@blogid}, guid:#{@guid};")
+
+
     end
   end
 end

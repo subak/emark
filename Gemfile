@@ -18,6 +18,8 @@ end
 
 group :publish do
   gem "nokogiri"
+  gem "haml"
+  gem "rdiscount"
 end
 
 

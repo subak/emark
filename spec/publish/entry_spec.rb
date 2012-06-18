@@ -5,12 +5,14 @@ require "./spec/publish/spec_helper"
 
 RSpec.configure do
   include Helper
+  include Emark::Publish::Entry::Helper
 end
 
 describe Emark::Publish::Entry do
   before:all do
     get_session
     @entry_q = Emark::Publish::Entry.new
+    @bid     = "test.example.com"
     @note = nil
   end
 
@@ -169,40 +171,70 @@ describe Emark::Publish::Entry do
     end
   end
 
-  ##
-  # markdownの書き出し
-  describe "step_6" do
-  end
 
-  ##
-  # jsonを作成
-  describe "step_7" do
-  end
+  describe "write down" do
+    before:all do
+      @note_guid  = Digest::SHA1.new.update("hoge").to_s
+      @eid        = Subak::Utility.shorten_hash(@note_guid).slice(0,4)
+      @markdown   = "## hoge"
+      @title      = "hoge"
+      @created    = Time.now.to_i * 1000
+      @updated    = Time.now.to_i * 1000
+    end
 
-  ##
-  # 検索エンジン用のhtmlを作成
-  describe "step_8" do
-  end
+    ##
+    # markdownの書き出し
+    it "step_6" do
+      result = @entry_q.step_6 @note_guid, @markdown
+      result.should match(/## hoge/)
+    end
 
-  ##
-  # エイリアスを作成
-  describe "step_9" do
+    ##
+    # jsonを作成
+    it "step_7" do
+      result = @entry_q.step_7 @note_guid, @eid, @markdown, @title, @created, @updated
+      logger.debug result
+      json = JSON.parse result
+
+      json["title"].should   == @title
+      json["created"].should == Time.at(@created/1000).utc.iso8601
+    end
+
+
+    it "step_8" do
+      result = @entry_q.step_8 @note_guid, @markdown, @title
+      logger.debug result
+
+      result.should match(/<h2>hoge/)
+    end
+
+    describe "step_9" do
+      it "symlink無し" do
+        dir  = File.join config.public_blog, @bid.slice(0,2), @bid, @eid
+        json = dir + ".json"
+        html = dir + ".html"
+        File.unlink json if File.symlink?(json)
+        File.unlink html if File.symlink?(html)
+
+        @entry_q.step_9(@note_guid, @eid, @bid).should be_true
+      end
+
+      it "symlink有り" do
+        @entry_q.step_9(@note_guid, @eid, @bid).should be_true
+      end
+    end
+
+
+    describe "step_10" do
+      before:all do
+        delete_sync
+      end
+
+      ["insert", "update"].each do |action|
+        it action do
+          @entry_q.step_10(@note_guid, @eid, @bid, @title, @created, @updated).should be_true
+        end
+      end
+    end
   end
 end
-
-=begin
-{"id"=>76,
- "uid"=>25512727,
- "shard"=>"s8",
- "authtoken"=>
-  "S=s8:U=1854b17:E=13f098627ea:C=137b1d4fbf3:P=185:A=tk84-1998:H=95f41033cb6ca020aaeab0f3ab27555d",
- "expires"=>1370254354,
- "sid"=>"befa118f1edae2dbf9dc7c734a822387",
- 0=>76,
- 1=>25512727,
- 2=>"s8",
- 3=>
-  "S=s8:U=1854b17:E=13f098627ea:C=137b1d4fbf3:P=185:A=tk84-1998:H=95f41033cb6ca020aaeab0f3ab27555d",
- 4=>1370254354,
-  5=>"befa118f1edae2dbf9dc7c734a822387"}
-=end
