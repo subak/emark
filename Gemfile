@@ -33,6 +33,10 @@ group :sprockets do
 end
 
 group :test do
+  gem 'ruby-debug19'
+  gem 'ruby-debug-base19x', '>= 0.11.30.pre10'
+  gem 'linecache19', git: 'https://github.com/mark-moseley/linecache.git', ref: '869c6a65155068415925067e480741bd0a71527e'
+
   gem "rack-test", :require => "rack/test"
 end
 

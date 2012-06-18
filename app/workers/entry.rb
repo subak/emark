@@ -31,22 +31,85 @@ module Emark
       attr_accessor :entry, :session
 
       def run
-        @entry = nil
+
+        # step_1
+        entry =
+          begin
+            step_1
+          rescue Empty
+            logger.debug "Emark::Publish::Entry Empty"
+            return :empty
+          end
+        guid    = entry[:note_guid]
+        bid     = entry[:bid]
+        updated = entry[:updated]
+
+        # step_2
+        begin
+          step_2 guid, updated
+        rescue Delete
+          step_2_1 guid, eid, bid
+          logger.info "Emark::Publish::Entry Delete"
+          return :delete
+
+        rescue Recover
+
+          logger.info "Emark::Publish::Entry Recover"
+          return :recover
+        end
+
+        # step_3
+        session   = step_3(bid)
+        authtoken = session[:authtoken]
+        shard     = session[:shard]
+
+        # step_4
+        note = step_4 guid, authtoken, shard
+        title   = note.title
+        created = note.created
+        updated = note.updated
+
+        # step_5
+        markdown = step_5 note, shard
+
+        # step_6
+        step_6 guid, markdown
+
+        # step_7
+        eid = Subak::Utility.shorten_hash guid.gsub("-", "").slice(0, 4)
+        step_7 guid, eid, markdown, title, created, updated
+
+        # step_8
+        step_8 guid, markdown, title
+
+        # step_9
+        step_9 guid, eid, bid
+
+        # step_10
+        step_10 guid, eid, bid, title, created, updated
+
+        # step_11
+        step_11 guid
+
+        logger.info "Emark::Publish::Entry bid:#{bid}, eid:#{eid}, guid:#{guid}"
+        true
       end
 
       def step_1
+        entry = nil
+
         db.transaction do
           select = db.entry_q.project(SqlLiteral.new "*")
           select.where(db.entry_q[:queued].not_eq nil)
           select.order db.entry_q[:queued].asc
           select.take 1
           logger.debug select.to_sql
-          @entry = db.get_first_row select.to_sql
-          raise Empty if @entry.!
+          entry = db.get_first_row select.to_sql
+          raise Empty if entry.!
 
           update = UpdateManager.new Table.engine
           update.table db.entry_q
-          update.where(db.entry_q[:note_guid].eq @entry[:note_guid])
+          update.where(db.entry_q[:note_guid].eq entry[:note_guid])
           update.set([
                           [db.entry_q[:queued], nil]
                         ])
@@ -55,26 +118,50 @@ module Emark
           raise Fatal if db.changes != 1
         end
 
-        @entry
+        entry
       end
 
-      def step_2
-        raise Delete if @entry[:updated].!
+      def step_2 guid, updated
+        raise Delete if updated.!
 
         select = db.sync.project(db.sync[:updated])
-        select.where(db.sync[:note_guid].eq @entry[:note_guid])
+        select.where(db.sync[:note_guid].eq guid)
         logger.debug select.to_sql
         update_sync = db.get_first_value select.to_sql
 
-        raise Recover if update_sync and update_sync == @entry[:updated]
+        raise Recover if update_sync and update_sync == updated
 
-        @entry[:bid]
+        true
       end
 
-      def step_3
-        select = db.session.project(db.session[:authtoken], db.session[:shard], db.blog[:notebook])
+      # delete
+      def step_2_1 guid, eid, bid
+        file = File.join config.public_blog, bid.slice(0, 2), bid, eid
+        json = file + ".json"
+        html = file + ".html"
+
+        File.unlink json
+        File.unlink html
+
+        update = UpdateManager.new Table.engine
+        update.table db.sync
+        update.set([
+                     [db.sync[:deleted], 1]
+                   ])
+        update.where(db.sync[:note_guid].eq guid)
+
+        true
+      end
+
+      # recover
+      def step_2_2
+
+      end
+
+      def step_3 bid
+        select = db.session.project(db.session[:authtoken], db.session[:shard])
         select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])
-        select.where(db.blog[:bid].eq @entry[:bid])
+        select.where(db.blog[:bid].eq bid)
         select.take 1
 
         logger.debug select.to_sql
@@ -83,7 +170,7 @@ module Emark
         session
       end
 
-      def step_4 guid, authtoken, shard, notebook
+      def step_4 guid, authtoken, shard
         noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{shard}")
         noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
         noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
@@ -126,7 +213,6 @@ module Emark
             url = "http://#{config.cache_host}/shard/#{shard}/res/#{guid}/#{fileName}"
             enMedia.add_previous_sibling Nokogiri::XML::Text.new("[#{fileName}](#{url})", doc)
           end
-
         end
 
         doc.text
@@ -174,9 +260,11 @@ HAML
         save_file(:entry, guid, :html, html)
       end
 
+      ##
+      # エイリアスの作成
       def step_9 guid, eid, bid
         old = File.dirname save_file_path(:entry, guid, :dummy)
-        new = File.join config.public_blog, bid.slice(0,2), bid, eid
+        new = File.join config.public_blog, bid.slice(0, 2), bid, eid
         FileUtils.mkdir_p File.dirname(new)
         File.symlink "#{old}.json", "#{new}.json" if File.symlink?("#{new}.json").!
         File.symlink "#{old}.html", "#{new}.html" if File.symlink?("#{new}.html").!
@@ -215,11 +303,21 @@ HAML
         true
       end
 
+      # step 11
+      # entry_q を削除
+      def step_11 guid
+        delete = DeleteManager.new Table.engine
+        delete.from db.entry_q
+        delete.where(db.entry_q[:note_guid].eq guid)
+        delete.where(db.entry_q[:queued].eq    nil)
 
+        db.transaction do
+          db.execute delete.to_sql
+          raise Fatal if 1 != db.changes
+        end
 
-#        @logger.info("Everblog::Publish::Entry => blogid:#{@blogid}, guid:#{@guid};")
-
-
+        true
+      end
     end
   end
 end

@@ -81,6 +81,11 @@ module Emark
   end
 end
 
+###########
+require "ruby-debug"
+Debugger.start
+
+
 module Helper
   def db
     Vars[:db]
@@ -139,5 +144,15 @@ module Helper
     delete = DeleteManager.new Table.engine
     delete.from db.sync
     db.execute delete.to_sql
+  end
+
+  def get_real_guid authtoken, shard
+    noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{shard}")
+    noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
+    noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
+
+    filter = Evernote::EDAM::NoteStore::NoteFilter.new
+    notes = noteStore.findNotes authtoken, filter, 0, 1
+    notes.notes[0].guid
   end
 end
