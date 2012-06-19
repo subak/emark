@@ -187,26 +187,6 @@ module Emark
         true
       end
 
-      # 回復
-      # DBのフラグを元に戻す
-      # エイリアスを作成する
-      def recover
-        old  = "%s/files/entry/%s/%s" % [PROJECT_ROOT, @guid.slice(0,2), @guid]
-        hash = Subak::Utility.shorten_hash(@guid.gsub '-', '')
-        new  = "%s/_/%s/%s/%s" % [PUBLIC_ROOT, @blogid.slice(0,2), @blogid, hash.slice(0,4)]
-
-        FileUtils.mkdir_p File.dirname(new)
-
-        File.symlink "#{old}.json", "#{new}.json" if File.exists?("#{new}.json").!
-        File.symlink "#{old}.html", "#{new}.html" if File.exists?("#{new}.html").!
-
-        @db.execute @ext.sql_publish(:recover), @blogid, @guid
-
-        @logger.info("Everblog::Publish::Entry => recover blogid:#{@blogid}, guid:#{@guid};")
-      end
-
-
-
       def step_3 bid
         select = db.session.project(db.session[:authtoken], db.session[:shard])
         select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])

@@ -132,6 +132,20 @@ namespace :rspec do
       end
       fsevent.run
     end
+
+    desc "rspec:publish:meta"
+    task :meta do
+      sh "rspec spec/publish/meta_spec.rb -cfs"
+      fsevent = FSEvent.new
+      fsevent.watch ["spec/publish", "app/workers"], ["--latency", "1.5"] do
+#        begin
+          sh "rspec spec/publish/meta_spec.rb -cfs"
+        # rescue Exception => e
+        #   pp e.backtrace
+        # end
+      end
+      fsevent.run
+    end
   end
 end
 
