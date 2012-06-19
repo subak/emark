@@ -2,13 +2,22 @@
 
 module Emark
   module Publish
-    class Meta
+    module Meta
       class Empty < Exception; end
       class Left < Exception; end
 
-      module Helper
-        def sitemap entries
-          haml = <<'HAML'
+      def self.run
+        # sitemap.xml
+        # atom
+        # meta.json
+        # blog.to_json
+        # index.json
+        # entries.to_json
+        # index.html
+      end
+
+      def sitemap entries
+        haml = <<'HAML'
 !!! XML
 %urlset{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
 - entries.each do |entry|
@@ -17,11 +26,11 @@ module Emark
     %lastmod= entry[:created]
 HAML
 
-          Haml::Engine.new(haml).render(self, entries: entries)
-        end
+        Haml::Engine.new(haml).render(self, entries: entries)
+      end
 
-        def atom entries, blog
-          haml = <<'HAML'
+      def atom entries, blog
+        haml = <<'HAML'
 !!! XML
 %feed{xmlns: "http://www.w3.org/2005/Atom"}
   %title
@@ -50,14 +59,14 @@ HAML
       %id= uri
 HAML
 
-          Haml::Engine.new(haml).
-            render(self,
-            entries: entries,
-            blog:    blog)
-        end
+        Haml::Engine.new(haml).
+          render(self,
+          entries: entries,
+          blog:    blog)
+      end
 
-        def index_html entries, blog
-          haml = <<'HAML'
+      def index_html entries, blog
+        haml = <<'HAML'
 !!!
 %html
   %head
@@ -75,11 +84,9 @@ HAML
         %h1= entry[:title]
 HAML
 
-          Haml::Engine.new(haml, :format => :html5).
-            render(self, entries: entries, blog: blog)
-        end
+        Haml::Engine.new(haml, :format => :html5).
+          render(self, entries: entries, blog: blog)
       end
-      include Helper
 
       def step_1
         bid = nil
@@ -125,12 +132,6 @@ HAML
             db.execute sql
             raise Fatal if db.changes != 1
 
-            # delete = DeleteManager.new Table.engine
-            # delete.from db.meta_q
-            # delete.where(db.meta_q[:id].eq meta[:id])
-            # db.execute delete.to_sql
-            # raise Fatal if db.changes != 1
-
             bid = meta[:bid]
           end
         end
@@ -169,98 +170,12 @@ HAML
         entries
       end
 
-      ##
-      # sitemap.xml
-      def step_4 entries
-        haml = <<'HAML'
-!!! XML
-%urlset{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
-- entries.each do |entry|
-  %url
-    %loc=     "http://#{entry[:bid]}/#{entry[:eid]}"
-    %lastmod= entry[:created]
-HAML
-
-        Haml::Engine.new(haml).render(self, entries: entries)
-      end
-
-      ##
-      # atom
-      def step_5 entries, blog
-        haml = <<'HAML'
-!!! XML
-%feed{xmlns: "http://www.w3.org/2005/Atom"}
-  %title
-    :cdata
-      #{blog[:title]}
-  %subtitle
-    :cdata
-      #{blog[:subtitle]}
-  %link{href: "http://#{blog[:bid]}/atom.xml", rel: "self"}
-  %link{href: "http://#{blog[:bid]}/"}
-  %updated= Time.now.utc.iso8601
-  %id= "http://#{blog[:bid]}/"
-  %author
-    %name
-      :cdata
-        #{blog[:author]}
-  %generator{uri: "http://emark.jp/", version: 0.1} Emark
-  - entries.each do |entry|
-    - uri = "http://#{entry[:bid]}/#{entry[:eid]}"
-    %entry
-      %title
-        :cdata
-          #{entry[:title]}
-      %link{href: uri}
-      %updated= entry[:updated]
-      %id= uri
-HAML
-
-        Haml::Engine.new(haml).
-          render(self,
-          entries: entries,
-          blog:    blog)
-      end
-
-      ##
-      # meta.json
-      def step_6 blog
-        blog.to_json
-      end
-
-      ##
-      # index.json
-      def step_7 entries
-        entries.to_json
-      end
-
-      ##
-      # index.html
-      def step_8 entries, blog
-        haml = <<'HAML'
-!!!
-%html
-  %head
-    %meta{charset: "utf-8"}
-    %meta{name: "description", content: blog[:subtitle]}
-    %meta{name: "author",      content: blog[:author]}
-    %title{title:  blog[:title]}
-  %body
-    %header
-      %hgroup
-        %h1= blog[:title]
-        %h2= blog[:subtitle]
-    - entries.each do |entry|
-      %article
-        %h1= entry[:title]
-HAML
-
-        Haml::Engine.new(haml, :format => :html5).
-          render(self, entries: entries, blog: blog)
-      end
-
-      def step_9
-
+      def step_4 bid
+        delete = DeleteManager.new Table.engine
+        delete.from db.meta_q
+        delete.where(db.meta_q[:bid].eq bid)
+        db.execute delete.to_sql
+        raise Fatal if db.changes != 1
       end
 
     end

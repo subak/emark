@@ -9,6 +9,7 @@ RSpec.configure do
 end
 
 
+__END__
 describe Emark::Publish::Meta do
   before:all do
     @meta_q = Emark::Publish::Meta.new
