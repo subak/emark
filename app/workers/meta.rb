@@ -3,9 +3,19 @@
 module Emark
   module Publish
     module Meta
+
+      def hoge
+        "huga"
+      end
+
+
       class << self
 
+        include Helper
+
         def run
+          pp hoge
+
           res = catch(:deque) { dequeue }
           case
           when res[:empty]

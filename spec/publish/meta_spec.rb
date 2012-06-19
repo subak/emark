@@ -5,20 +5,12 @@ require "./spec/publish/spec_helper"
 
 RSpec.configure do
   include Helper
-  #include Emark::Publish::Meta::Helper
-end
-
-describe Emark::Publish::Meta do
-  it "first" do
-    Emark::Publish::Meta.run
-  end
+  include Emark::Publish::Meta
 end
 
 
-__END__
 describe Emark::Publish::Meta do
   before:all do
-    @meta_q = Emark::Publish::Meta.new
     @bid    = "test.example.com"
     @title  = "my first blog"
     @subtitle = "this is my first blog"
@@ -56,49 +48,56 @@ describe Emark::Publish::Meta do
     end
 
     describe "キュー無し" do
-      it Emark::Publish::Meta::Empty do
-        proc do
-          @meta_q.step_1
-        end.should raise_error(Emark::Publish::Meta::Empty)
+      it :empty do
+        Emark::Publish::Meta.run
+
+#        catch(:dequeue) { self.class.dequeue }
+
+        # proc do
+        #   @meta_q.step_1
+        # end.should raise_error(Emark::Publish::Meta::Empty)
       end
     end
 
-    describe "キュー有り" do
-      before:all do
-        @queued = Time.now.to_f - 10; logger.debug @queued
-        insert  = db.meta_q.insert_manager
-        insert.insert([
-                        [db.meta_q[:bid],    @bid],
-                        [db.meta_q[:queued], @queued]
-                      ])
-        db.execute insert.to_sql
+    # describe "キュー有り" do
+    #   before:all do
+    #     @queued = Time.now.to_f - 10; logger.debug @queued
+    #     insert  = db.meta_q.insert_manager
+    #     insert.insert([
+    #                     [db.meta_q[:bid],    @bid],
+    #                     [db.meta_q[:queued], @queued]
+    #                   ])
+    #     db.execute insert.to_sql
 
-        insert = db.entry_q.insert_manager
-        insert.insert([
-                        [db.entry_q[:note_guid], "012345"],
-                        [db.entry_q[:queued],    Time.now.to_f],
-                        [db.entry_q[:bid],       @bid]
-                      ])
-        db.execute insert.to_sql
-      end
+    #     insert = db.entry_q.insert_manager
+    #     insert.insert([
+    #                     [db.entry_q[:note_guid], "012345"],
+    #                     [db.entry_q[:queued],    Time.now.to_f],
+    #                     [db.entry_q[:bid],       @bid]
+    #                   ])
+    #     db.execute insert.to_sql
+    #   end
 
-      it Emark::Publish::Meta::Left do
-        proc do
-          @meta_q.step_1
-        end.should raise_error(Emark::Publish::Meta::Left)
+    #   it Emark::Publish::Meta::Left do
+    #     proc do
+    #       @meta_q.step_1
+    #     end.should raise_error(Emark::Publish::Meta::Left)
 
-        select = db.meta_q.project(db.meta_q[:queued])
-        select.where(db.meta_q[:bid].eq @bid)
+    #     select = db.meta_q.project(db.meta_q[:queued])
+    #     select.where(db.meta_q[:bid].eq @bid)
 
-        db.get_first_value(select.to_sql).should > @queued
-      end
+    #     db.get_first_value(select.to_sql).should > @queued
+    #   end
 
-      it "ok" do
-        delete_entry_q
-        @meta_q.step_1.should == @bid
-      end
-    end
+    #   it "ok" do
+    #     delete_entry_q
+    #     @meta_q.step_1.should == @bid
+    #   end
   end
+end
+
+
+__END__
 
   describe "step_4" do
     it "run" do
