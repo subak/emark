@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120618191212) do
+ActiveRecord::Schema.define(:version => 20120619144151) do
 
   create_table "blog", :force => true do |t|
     t.text    "bid",      :default => "", :null => false
@@ -41,8 +41,9 @@ ActiveRecord::Schema.define(:version => 20120618191212) do
   add_index "entry_q", ["note_guid"], :name => "index_entry_on_note_guid", :unique => true
 
   create_table "meta_q", :force => true do |t|
-    t.text  "bid"
-    t.float "queued"
+    t.text    "bid"
+    t.float   "queued"
+    t.integer "lock",   :default => 0, :null => false
   end
 
   add_index "meta_q", ["bid"], :name => "index_meta_on_bid", :unique => true

@@ -39,9 +39,7 @@ describe Emark::Publish::Meta do
 
   end
 
-  ##
-  # step_1
-  describe "step_1" do
+  describe "queue" do
     before:all do
       delete_meta_q
       delete_entry_q
@@ -49,76 +47,130 @@ describe Emark::Publish::Meta do
 
     describe "キュー無し" do
       it :empty do
-        Emark::Publish::Meta.run
-
-#        catch(:dequeue) { self.class.dequeue }
-
-        # proc do
-        #   @meta_q.step_1
-        # end.should raise_error(Emark::Publish::Meta::Empty)
+        dequeue()[:empty].should be_true
       end
     end
 
-    # describe "キュー有り" do
-    #   before:all do
-    #     @queued = Time.now.to_f - 10; logger.debug @queued
-    #     insert  = db.meta_q.insert_manager
-    #     insert.insert([
-    #                     [db.meta_q[:bid],    @bid],
-    #                     [db.meta_q[:queued], @queued]
-    #                   ])
-    #     db.execute insert.to_sql
+    describe "キュー有り" do
+      before:all do
+        @queued = Time.now.to_f - 10; logger.debug @queued
+        insert  = db.meta_q.insert_manager
+        insert.insert([
+                        [db.meta_q[:bid],    @bid],
+                        [db.meta_q[:queued], @queued]
+                      ])
+        db.execute insert.to_sql
 
-    #     insert = db.entry_q.insert_manager
-    #     insert.insert([
-    #                     [db.entry_q[:note_guid], "012345"],
-    #                     [db.entry_q[:queued],    Time.now.to_f],
-    #                     [db.entry_q[:bid],       @bid]
-    #                   ])
-    #     db.execute insert.to_sql
-    #   end
+        insert = db.entry_q.insert_manager
+        insert.insert([
+                        [db.entry_q[:note_guid], "012345"],
+                        [db.entry_q[:queued],    Time.now.to_f],
+                        [db.entry_q[:bid],       @bid]
+                      ])
+        db.execute insert.to_sql
+      end
 
-    #   it Emark::Publish::Meta::Left do
-    #     proc do
-    #       @meta_q.step_1
-    #     end.should raise_error(Emark::Publish::Meta::Left)
+      it :left do
+        dequeue()[:left].should be_true
 
-    #     select = db.meta_q.project(db.meta_q[:queued])
-    #     select.where(db.meta_q[:bid].eq @bid)
+        select = db.meta_q.project(db.meta_q[:queued])
+        select.where(db.meta_q[:bid].eq @bid)
+        db.get_first_value(select.to_sql).should > @queued
+      end
 
-    #     db.get_first_value(select.to_sql).should > @queued
-    #   end
+      it "lockされていないqueueは削除できない" do
+        proc do
+          delete_queue(@bid)
+        end.should raise_error(Emark::Publish::Fatal)
+      end
 
-    #   it "ok" do
-    #     delete_entry_q
-    #     @meta_q.step_1.should == @bid
-    #   end
+      it "ok" do
+        delete_entry_q
+        dequeue()[:bid].should == @bid
+
+        select = db.meta_q.project(db.meta_q[:lock])
+        select.where(db.meta_q[:bid].eq @bid)
+        db.get_first_value(select.to_sql).should == 1
+      end
+
+      it Emark::Publish::Fatal do
+        proc do
+          dequeue
+        end.should raise_error(Emark::Publish::Fatal)
+      end
+
+      it "delete_queue" do
+        delete_queue(@bid).should be_true
+      end
+    end
   end
-end
 
-
-__END__
-
-  describe "step_4" do
-    it "run" do
-      xml = @meta_q.step_4 @entries
+  describe "ファイル生成" do
+    it "sitemap.xml" do
+      xml = sitemap @entries
       logger.debug xml
       xml.should match %r{<loc>http://#{@bid}}
     end
-  end
 
-  describe "step_5" do
-    it "run" do
-      xml = @meta_q.step_5 @entries, @blog
+    it "atom.xml" do
+      xml = atom @entries, @blog
       logger.debug xml
     end
-  end
 
-  describe "step_8" do
-    it "run" do
-      html = @meta_q.step_8 @entries, @blog
+    it "index.html" do
+      html = index_html @entries, @blog
       logger.debug html
     end
   end
 
+  describe "run" do
+    before:all do
+      delete_meta_q
+      delete_entry_q
+      delete_blog
+      delete_sync
+
+      insert  = db.meta_q.insert_manager
+      insert.insert([
+                      [db.meta_q[:bid],    @bid],
+                      [db.meta_q[:queued], Time.now.to_f]
+                    ])
+      db.execute insert.to_sql
+
+      # insert = db.entry_q.insert_manager
+      # insert.insert([
+      #                 [db.entry_q[:note_guid], "012345"],
+      #                 [db.entry_q[:queued],    Time.now.to_f],
+      #                 [db.entry_q[:bid],       @bid]
+      #               ])
+      # db.execute insert.to_sql
+
+      insert = db.blog.insert_manager
+      insert.insert([
+                      [db.blog[:bid],      @bid],
+                      [db.blog[:title],    @title],
+                      [db.blog[:subtitle], @subtitle],
+                      [db.blog[:author],   @author]
+                    ])
+      db.execute insert.to_sql
+
+      @entries.each do |entry|
+        insert = db.sync.insert_manager
+        insert.insert([
+                        [db.sync[:bid],   entry[:bid]],
+                        [db.sync[:eid],   entry[:eid]],
+                        [db.sync[:title], entry[:title]],
+                        [db.sync[:created], Time.now.to_f * 1000],
+                        [db.sync[:updated], Time.now.to_f * 1000]
+                      ])
+        db.execute insert.to_sql
+      end
+    end
+
+    it "throught" do
+      sync do
+        Emark::Publish::Meta.run
+      end
+    end
+  end
 end
