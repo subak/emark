@@ -5,7 +5,13 @@ require "./spec/publish/spec_helper"
 
 RSpec.configure do
   include Helper
-  include Emark::Publish::Meta::Helper
+  #include Emark::Publish::Meta::Helper
+end
+
+describe Emark::Publish::Meta do
+  it "first" do
+    Emark::Publish::Meta.run
+  end
 end
 
 

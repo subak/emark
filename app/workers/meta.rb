@@ -3,21 +3,67 @@
 module Emark
   module Publish
     module Meta
-      class Empty < Exception; end
-      class Left < Exception; end
+      class << self
 
-      def self.run
-        # sitemap.xml
-        # atom
-        # meta.json
-        # blog.to_json
-        # index.json
-        # entries.to_json
-        # index.html
-      end
+        def run
+          res = catch(:deque) { dequeue }
+          case
+          when res[:empty]
+            logger.debug "Emark::Publish::Meta#empty"
+            return :empty
+          when res[:left]
+            logger.info "Emark::Publish::Meta#left bid:#{res[:bid]}, count:#{res[:count]}"
+            return :left
+          else
+            bid = result
+          end
 
-      def sitemap entries
-        haml = <<'HAML'
+          blog    = find_blog bid
+          entries = find_entries bid
+
+          FileUtils.mkdir_p file_dir(bid)
+          FileUtils.mkdir_p sym_dir(bid)
+
+          save_file bid, "sitemap.xml", sitemap(entries)
+          save_file bid, "atom.xml",    atom(entries, blog)
+          save_file bid, "index.html",  index_html(entries, blog)
+          save_file bid, "meta.json",   blog.to_json
+          save_file bid, "index.json",  entries.to_json
+
+          ##
+          # templateファイル
+          tpl = File.join config.public, 'emark.jp/octopress/index.html'
+          sym = File.join sym_dir(bid),  "template.html"
+          File.unlink sym if File.symlink? sym
+          File.symlink tpl, sym
+
+          delete_queue
+        end
+
+        private
+
+        def file_dir bid
+          File.join config.root, "files/index", bid.slice(0, 2), bid
+        end
+
+        def sym_dir bid
+          File.join config.public_blog, bid.slice(0, 2), bid
+        end
+
+        def save_file bid, filename, content
+          file = File.join file_dir(bid), filename
+          sym  = File.join sym_dir(bid), filename
+
+          File.open file, "w" do |fp|
+            fp.write content
+          end
+
+          File.unlink sym if File.symlink? sym
+          File.symlink file, sym
+        end
+
+        def sitemap entries
+          haml = <<'HAML'
 !!! XML
 %urlset{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
 - entries.each do |entry|
@@ -26,11 +72,11 @@ module Emark
     %lastmod= entry[:created]
 HAML
 
-        Haml::Engine.new(haml).render(self, entries: entries)
-      end
+          Haml::Engine.new(haml).render(self, entries: entries)
+        end
 
-      def atom entries, blog
-        haml = <<'HAML'
+        def atom entries, blog
+          haml = <<'HAML'
 !!! XML
 %feed{xmlns: "http://www.w3.org/2005/Atom"}
   %title
@@ -59,14 +105,14 @@ HAML
       %id= uri
 HAML
 
-        Haml::Engine.new(haml).
-          render(self,
-          entries: entries,
-          blog:    blog)
-      end
+          Haml::Engine.new(haml).
+            render(self,
+            entries: entries,
+            blog:    blog)
+        end
 
-      def index_html entries, blog
-        haml = <<'HAML'
+        def index_html entries, blog
+          haml = <<'HAML'
 !!!
 %html
   %head
@@ -84,27 +130,25 @@ HAML
         %h1= entry[:title]
 HAML
 
-        Haml::Engine.new(haml, :format => :html5).
-          render(self, entries: entries, blog: blog)
-      end
+          Haml::Engine.new(haml, :format => :html5).
+            render(self, entries: entries, blog: blog)
+        end
 
-      def step_1
-        bid = nil
-
-        catch :left do
+        def dequeue
           db.transaction do
             select = db.meta_q.project(db.meta_q[:id], db.meta_q[:bid])
             select.where(db.meta_q[:queued].not_eq nil)
             select.order db.meta_q[:queued].asc
             select.take 1
             meta = db.get_first_row select.to_sql
-            raise Empty if meta.!
+            throw :deque, :empty => true
 
-            select = db.entry_q.project(db.entry_q[:id])
+            # entryをカウントする？
+            select = db.entry_q.project(db.entry_q[:id].count)
             select.where(db.entry_q[:bid].eq meta[:bid])
-            select.take 1
             sql = select.to_sql; logger.debug sql
-            if db.get_first_value(sql)
+            count = db.get_first_value(sql)
+            if 1 <= count
 
               # キュー時刻を更新
               update = UpdateManager.new Table.engine
@@ -118,7 +162,7 @@ HAML
               db.execute sql
               raise Fatal if db.changes != 1
 
-              throw :left
+              throw :deque, :left => true, :bid => meta[:bid], :count => count
             end
 
             update = UpdateManager.new Table.engine
@@ -132,52 +176,49 @@ HAML
             db.execute sql
             raise Fatal if db.changes != 1
 
-            bid = meta[:bid]
+            throw :dequeue, meta[:bid]
           end
         end
-        raise Left if bid.!
 
-        bid
-      end
+        def find_blog bid
+          select = db.blog.project(SqlLiteral.new "*")
+          select.where(db.blog[:bid].eq bid)
+          blog = db.get_first_row select.to_sql
+          raise Fatal if blog.!
 
-      def step_2 bid
-        select = db.blog.project(SqlLiteral.new "*")
-        select.where(db.blog[:bid].eq bid)
-        blog = db.get_first_row select.to_sql
-        raise Fatal if blog.!
-
-        blog
-      end
-
-      def step_3 bid
-        select = db.sync.project(SqlLiteral.new "*")
-        select.where(db.sync[:bid].eq bid)
-        select.where(db.sync[:deleted].eq 0)
-        select.order db.sync[:created].desc
-        entries = []
-
-        db.execute select.to_sql do |row|
-          entries << {
-            guid:    row[:guid],
-            title:   row[:title],
-            created: Time.at(row[:created/1000]).utc.iso8601,
-            updated: Time.at(row[:updated/1000]).utc.iso8601,
-            eid:     row[:eid],
-            bid:     row[:bid]
-          }
+          blog
         end
 
-        entries
-      end
+        def find_entries bid
+          select = db.sync.project(SqlLiteral.new "*")
+          select.where(db.sync[:bid].eq bid)
+          select.where(db.sync[:deleted].eq 0)
+          select.order db.sync[:created].desc
+          entries = []
 
-      def step_4 bid
-        delete = DeleteManager.new Table.engine
-        delete.from db.meta_q
-        delete.where(db.meta_q[:bid].eq bid)
-        db.execute delete.to_sql
-        raise Fatal if db.changes != 1
-      end
+          db.execute select.to_sql do |row|
+            entries << {
+              guid:    row[:guid],
+              title:   row[:title],
+              created: Time.at(row[:created]/1000).utc.iso8601,
+              updated: Time.at(row[:updated]/1000).utc.iso8601,
+              eid:     row[:eid],
+              bid:     row[:bid]
+            }
+          end
 
+          entries
+        end
+
+        def delete_queue bid
+          delete = DeleteManager.new Table.engine
+          delete.from db.meta_q
+          delete.where(db.meta_q[:bid].eq bid)
+          db.execute delete.to_sql
+          raise Fatal if db.changes != 1
+        end
+
+      end
     end
   end
 end
