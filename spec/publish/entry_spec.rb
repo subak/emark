@@ -5,27 +5,25 @@ require "./spec/publish/spec_helper"
 
 RSpec.configure do
   include Helper
-  include Emark::Publish::Entry::Helper
+  include Emark::Publish::Entry
+#  include Emark::Publish::Entry::Helper
 end
 
 describe Emark::Publish::Entry do
   before:all do
     get_session
-    @entry_q = Emark::Publish::Entry.new
     @bid     = "test.example.com"
-    @note = nil
+    @note    = nil
   end
 
-  describe "step_1" do
+  describe "dequeue" do
     before:all do
       delete_entry_q
       @guid = "12345"
     end
 
     it Emark::Publish::Empty do
-      proc do
-        @entry_q.step_1
-      end.should raise_error(Emark::Publish::Empty)
+      dequeue.should be_false
     end
 
     describe "queue 有り" do
@@ -41,21 +39,16 @@ describe Emark::Publish::Entry do
       end
 
       it "should return entry" do
-        @entry = @entry_q.step_1
-        @entry.should have_key(:note_guid)
-        @entry.should have_key(:updated)
-        @entry.should have_key(:bid)
-        @entry.should have_key(:queued)
+        entry = dequeue
+        entry.should have_key(:note_guid)
+        entry.should have_key(:updated)
+        entry.should have_key(:bid)
+        entry.should have_key(:queued)
       end
-
     end
   end
 
-  describe "step_2" do
-    before:all do
-      @guid = "12345"
-    end
-
+  describe "detect" do
     before do
       delete_sync
     end
@@ -65,7 +58,7 @@ describe Emark::Publish::Entry do
     # syncにだけ存在していて、evernoteには情報がない
     it Emark::Publish::Entry::Delete do
       proc do
-        @entry_q.step_2 nil, nil
+        detect nil, nil
       end.should raise_error(Emark::Publish::Entry::Delete)
     end
 
@@ -84,7 +77,7 @@ describe Emark::Publish::Entry do
       db.execute insert.to_sql
 
       proc do
-        @entry_q.step_2 @guid, updated
+        detect @guid, updated
       end.should raise_error Emark::Publish::Entry::Recover
     end
 
@@ -99,16 +92,15 @@ describe Emark::Publish::Entry do
                     ])
       db.execute insert.to_sql
 
-      @entry_q.step_2(@guid, updated+10).should be_true
+      detect(@guid, updated+10).should be_true
     end
   end
 
-  ##
-  # sessionの取得
-  describe "step_3" do
+
+  describe "session" do
     it Emark::Publish::Fatal do
       proc do
-        @entry_q.step_3 nil
+        session nil
       end.should raise_error Emark::Publish::Fatal
     end
 
@@ -121,15 +113,16 @@ describe Emark::Publish::Entry do
                     ])
       db.execute insert.to_sql
 
-      session = @entry_q.step_3 @bid
+      session = session @bid
       session[:authtoken].should == @session[:authtoken]
     end
   end
 
-  describe "step_4" do
+  describe "note" do
     it Exception do
       begin
-        @entry_q.step_4 "dummy_guid", @session[:authtoken], @session[:shard], @session[:notebook]
+        note "dummy_guid", @session[:authtoken], @session[:shard], @session[:notebook]
+#        @entry_q.step_4 "dummy_guid", @session[:authtoken], @session[:shard], @session[:notebook]
       rescue Exception => e
         e
       end.should be_a_kind_of(Exception)
@@ -137,7 +130,7 @@ describe Emark::Publish::Entry do
 
     it "ok" do
       guid = get_real_guid @session[:authtoken], @session[:shard]
-      note = @entry_q.step_4 guid, @session[:authtoken], @session[:shard]
+      note = note guid, @session[:authtoken], @session[:shard]
 
       note.guid.should == guid
       Vars[:note] = note
@@ -146,10 +139,10 @@ describe Emark::Publish::Entry do
 
   ##
   # fixtureを用意したほうがよさそう
-  describe "step_5" do
+  describe "markdown" do
     it "markdownテキストを出力" do
       note = Vars[:note]
-      @entry_q.step_5(note, @session[:shard]).should_not be_nil
+      markdown(note, @session[:shard]).should_not be_nil
     end
   end
 
@@ -165,16 +158,9 @@ describe Emark::Publish::Entry do
     end
 
     ##
-    # markdownの書き出し
-    it "step_6" do
-      result = @entry_q.step_6 @note_guid, @markdown
-      result.should match(/## hoge/)
-    end
-
-    ##
     # jsonを作成
-    it "step_7" do
-      result = @entry_q.step_7 @note_guid, @eid, @markdown, @title, @created, @updated
+    it "entry_json" do
+      result = entry_json @note_guid, @eid, @markdown, @title, @created, @updated
       logger.debug result
       json = JSON.parse result
 
@@ -183,58 +169,116 @@ describe Emark::Publish::Entry do
     end
 
 
-    it "step_8" do
-      result = @entry_q.step_8 @note_guid, @markdown, @title
+    it "entry_html" do
+      result = entry_html @note_guid, @markdown, @title
       logger.debug result
 
       result.should match(/<h2>hoge/)
     end
 
-    describe "step_9" do
-      it "symlink無し" do
-        dir  = File.join config.public_blog, @bid.slice(0,2), @bid, @eid
-        json = dir + ".json"
-        html = dir + ".html"
-        File.unlink json if File.symlink?(json)
-        File.unlink html if File.symlink?(html)
 
-        @entry_q.step_9(@note_guid, @eid, @bid).should be_true
-      end
-
-      it "symlink有り" do
-        @entry_q.step_9(@note_guid, @eid, @bid).should be_true
-      end
-    end
-
-
-    describe "step_10" do
+    describe "update_sync" do
       before:all do
         delete_sync
       end
 
       ["insert", "update"].each do |action|
         it action do
-          @entry_q.step_10(@note_guid, @eid, @bid, @title, @created, @updated).should be_true
+          update_sync(@note_guid, @eid, @bid, @title, @created, @updated).should be_true
         end
       end
     end
   end
 
-  describe "step_11" do
-    it "run" do
-      guid = "012345"
-
+  describe "キューの削除" do
+    before do
+      @guid = "012345"
       delete_entry_q
+    end
+
+    it "lockが0の時失敗" do
       insert = db.entry_q.insert_manager
       insert.insert([
-                      [db.entry_q[:note_guid], guid],
-                      [db.entry_q[:queued],    nil]
+                      [db.entry_q[:note_guid], @guid],
+                      [db.entry_q[:lock], 0]
                     ])
       db.execute insert.to_sql
 
-      @entry_q.step_11(guid).should be_true
+      proc do
+        delete_queue(@guid)
+      end.should raise_error Emark::Publish::Fatal
+    end
+
+    it "success" do
+      insert = db.entry_q.insert_manager
+      insert.insert([
+                      [db.entry_q[:note_guid], @guid],
+                      [db.entry_q[:lock], 1]
+                    ])
+      db.execute insert.to_sql
+
+      delete_queue(@guid).should be_true
     end
   end
+
+  describe "run" do
+    it "empty" do
+      sync do
+        Emark::Publish::Entry.run.should == :empty
+      end
+    end
+
+    describe "ok" do
+      before:all do
+        delete_entry_q
+        delete_blog
+        delete_sync
+        get_session
+
+        @bid  = "test.example.com"
+        @guid = get_real_guid @session[:authtoken], @session[:shard]
+        @eid  = Subak::Utility.shorten_hash(@guid.gsub("-", "").slice(0, 4))
+
+        insert = db.blog.insert_manager
+        insert.insert([
+                        [db.blog[:uid], @session[:uid]],
+                        [db.blog[:bid], @bid]
+                      ])
+        db.execute insert.to_sql
+
+        insert = db.entry_q.insert_manager
+        insert.insert([
+                        [db.entry_q[:note_guid], @guid],
+                        [db.entry_q[:updated],   Time.now.to_f * 1000],
+                        [db.entry_q[:bid],       @bid],
+                        [db.entry_q[:queued],    Time.now.to_f]
+                      ])
+        db.execute insert.to_sql
+      end
+
+      it "through" do
+        sync do
+          Emark::Publish::Entry.run.should be_true
+        end
+      end
+
+      it "delete" do
+        delete(@guid, @eid, @bid).should be_true
+      end
+
+      it "recover" do
+        recover(@guid, @eid, @bid).should be_true
+      end
+    end
+  end
+
+
+end
+__END__
+
+
+
+
 
   describe "run" do
     it "empty" do

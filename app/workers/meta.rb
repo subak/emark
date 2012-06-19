@@ -24,6 +24,8 @@ module Emark
 
         File.unlink sym if File.symlink? sym
         File.symlink file, sym
+
+        true
       end
 
       def sitemap entries
@@ -100,7 +102,7 @@ HAML
 
       def dequeue
         select = db.meta_q.project(db.meta_q[:bid])
-        select.where(db.meta_q[:queued].not_eq nil)
+        select.where(db.meta_q[:lock].eq 0)
         select.order db.meta_q[:queued].asc
         select.take 1
         bid = db.get_first_value select.to_sql

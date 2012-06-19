@@ -2,126 +2,34 @@
 
 module Emark
   module Publish
-    class Entry
+    module Entry
       class Delete < Exception; end
       class Recover < Exception; end
 
-      module Helper
-        def alias_path bid, eid, extension
-          file = File.join(config.public_blog, bid.slice(0, 2), bid, eid)
-          "#{file}.#{extension}"
-        end
+      def dequeue
+        select = db.entry_q.project(SqlLiteral.new "*")
+        select.where(db.entry_q[:lock].eq 0)
+        select.order db.entry_q[:queued].asc
+        select.take 1
+        sql = select.to_sql; logger.debug sql
+        entry = db.get_first_row sql
+        return false if entry.!
 
-        def save_file_path dirname, note_guid, extension
-          dirname   = dirname.to_s
-          extension = extension.to_s
-          dir  = File.join config.root, "files", dirname, note_guid.slice(0,2)
-          file_name = note_guid + "." + extension
-
-          File.join(dir, file_name)
-        end
-
-        def save_file dirname, note_guid, extension, content
-          file = save_file_path dirname, note_guid, extension
-          FileUtils.mkdir_p File.dirname(file)
-          File.open file, "w" do |fp|
-            fp.write content
-          end
-          content
-        end
-      end
-      include Helper
-
-      def run
-        # step_1
-        entry =
-          begin
-            step_1
-          rescue Empty
-            logger.debug "Emark::Publish::Entry Empty"
-            return :empty
-          end
-        guid    = entry[:note_guid]
-        bid     = entry[:bid]
-        updated = entry[:updated]
-
-        # step_2
-        begin
-          step_2 guid, updated
-        rescue Delete
-          step_2_1 guid, eid, bid
-          logger.info "Emark::Publish::Entry#delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
-          return :delete
-        rescue Recover
-          step_2_2 guid, eid, bid
-          logger.info "Emark::Publish::Entry#recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
-          return :recover
-        end
-
-        # step_3
-        session   = step_3(bid)
-        authtoken = session[:authtoken]
-        shard     = session[:shard]
-
-        # step_4
-        note = step_4 guid, authtoken, shard
-        title   = note.title
-        created = note.created
-        updated = note.updated
-
-        # step_5
-        markdown = step_5 note, shard
-
-        # step_6
-        step_6 guid, markdown
-
-        # step_7
-        eid = Subak::Utility.shorten_hash guid.gsub("-", "").slice(0, 4)
-        step_7 guid, eid, markdown, title, created, updated
-
-        # step_8
-        step_8 guid, markdown, title
-
-        # step_9
-        step_9 guid, eid, bid
-
-        # step_10
-        step_10 guid, eid, bid, title, created, updated
-
-        # step_11
-        step_11 guid
-
-        logger.info "Emark::Publish::Entry#run bid:#{bid}, eid:#{eid}, guid:#{guid}"
-        true
-      end
-
-      def step_1
-        entry = nil
-
-        db.transaction do
-          select = db.entry_q.project(SqlLiteral.new "*")
-          select.where(db.entry_q[:queued].not_eq nil)
-          select.order db.entry_q[:queued].asc
-          select.take 1
-          logger.debug select.to_sql
-          entry = db.get_first_row select.to_sql
-          raise Empty if entry.!
-
-          update = UpdateManager.new Table.engine
-          update.table db.entry_q
-          update.where(db.entry_q[:note_guid].eq entry[:note_guid])
-          update.set([
-                          [db.entry_q[:queued], nil]
-                        ])
-          logger.debug update.to_sql
-          db.execute update.to_sql
-          raise Fatal if db.changes != 1
-        end
+        update = UpdateManager.new Table.engine
+        update.table db.entry_q
+        update.where(db.entry_q[:note_guid].eq entry[:note_guid])
+        update.where(db.entry_q[:lock].eq 0)
+        update.set([
+                     [db.entry_q[:lock], 1]
+                   ])
+        logger.debug update.to_sql
+        db.execute update.to_sql
+        raise Fatal if db.changes != 1
 
         entry
       end
 
-      def step_2 guid, updated
+      def detect guid, updated
         raise Delete if updated.!
 
         select = db.sync.project(db.sync[:updated])
@@ -134,60 +42,7 @@ module Emark
         true
       end
 
-      # delete
-      def step_2_1 guid, eid, bid
-        file = File.join config.public_blog, bid.slice(0, 2), bid, eid
-        json = file + ".json"
-        html = file + ".html"
-
-        # errorの可能性
-        File.unlink json
-        File.unlink html
-
-        update = UpdateManager.new Table.engine
-        update.table db.sync
-        update.set([
-                     [db.sync[:deleted], 1]
-                   ])
-        update.where(db.sync[:note_guid].eq guid)
-        db.transaction do
-          db.execute update.to_sql
-          raise Fatal if 1 != db.changes
-        end
-
-        true
-      end
-
-      # recover
-      def step_2_2 guid, eid, bid
-        org_json = save_file_path :entry, guid, :json
-        org_html = save_file_path :entry, guid, :html
-
-        ali_json = alias_path bid, eid, :json
-        ali_html = alias_path bid, eid, :html
-
-        FileUtils.mkdir_p File.dirname(ali_json)
-
-        # errorの可能性
-        File.symlink org_json, ali_json
-        File.symlink org_html, ali_html
-
-        update = UpdateManager.new Table.engine
-        update.table db.sync
-        update.set([
-                     [db.sync[:deleted], 0],
-                     [db.sync[:bid],     bid]
-                   ])
-        update.where(db.sync[:note_guid].eq guid)
-        db.transaction do
-          db.execute update.to_sql
-          raise Fatal if 1 != db.changes
-        end
-
-        true
-      end
-
-      def step_3 bid
+      def session bid
         select = db.session.project(db.session[:authtoken], db.session[:shard])
         select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])
         select.where(db.blog[:bid].eq bid)
@@ -199,7 +54,7 @@ module Emark
         session
       end
 
-      def step_4 guid, authtoken, shard
+      def note guid, authtoken, shard
         noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{shard}")
         noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
         noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
@@ -207,7 +62,7 @@ module Emark
         noteStore.getNote(authtoken, guid, true, false, false, false)
       end
 
-      def step_5 note, shard
+      def markdown note, shard
         title = note.title
         enml  = note.content
         resources = {}
@@ -248,14 +103,8 @@ module Emark
       end
 
       ##
-      # markdownをディスクへ書き出し
-      def step_6 guid, markdown
-        save_file :markdown, guid, :markdown, markdown
-      end
-
-      ##
       # jsonを作成
-      def step_7 guid, eid, markdown, title, created, updated
+      def entry_json guid, eid, markdown, title, created, updated
         json = {
           eid:      eid,
           title:    title,
@@ -264,12 +113,12 @@ module Emark
           markdown: markdown
         }
 
-        save_file :entry, guid, :json, json.to_json
+        json.to_json
       end
 
       ##
       # 検索エンジン用のhtml
-      def step_8 guid, markdown, title
+      def entry_html guid, markdown, title
         rDiscount = RDiscount.new markdown
         haml = <<HAML
 !!!
@@ -286,23 +135,12 @@ HAML
           to_html(self,
              title: title,
              html:  rDiscount.to_html)
-        save_file(:entry, guid, :html, html)
       end
+
 
       ##
-      # エイリアスの作成
-      def step_9 guid, eid, bid
-        old = File.dirname save_file_path(:entry, guid, :dummy)
-        new = File.join config.public_blog, bid.slice(0, 2), bid, eid
-        FileUtils.mkdir_p File.dirname(new)
-        File.symlink "#{old}.json", "#{new}.json" if File.symlink?("#{new}.json").!
-        File.symlink "#{old}.html", "#{new}.html" if File.symlink?("#{new}.html").!
-        true
-      end
-
-      # step 10
       # syncテーブルを更新
-      def step_10 guid, eid, bid, title, created, updated
+      def update_sync guid, eid, bid, title, created, updated
         data = [
           [db.sync[:note_guid], guid],
           [db.sync[:eid],       eid],
@@ -332,13 +170,13 @@ HAML
         true
       end
 
-      # step 11
+      ##
       # entry_q を削除
-      def step_11 guid
+      def delete_queue guid
         delete = DeleteManager.new Table.engine
         delete.from db.entry_q
         delete.where(db.entry_q[:note_guid].eq guid)
-        delete.where(db.entry_q[:queued].eq    nil)
+        delete.where(db.entry_q[:lock].eq 1)
 
         db.transaction do
           db.execute delete.to_sql
@@ -346,6 +184,150 @@ HAML
         end
 
         true
+      end
+
+      ##
+      # delete
+      def delete guid, eid, bid
+        file = File.join config.public_blog, bid.slice(0, 2), bid, eid
+        json = file + ".json"
+        html = file + ".html"
+
+        # errorの可能性
+        File.unlink json
+        File.unlink html
+
+        update = UpdateManager.new Table.engine
+        update.table db.sync
+        update.set([
+                     [db.sync[:deleted], 1]
+                   ])
+        update.where(db.sync[:note_guid].eq guid)
+        db.transaction do
+          db.execute update.to_sql
+          raise Fatal if 1 != db.changes
+        end
+
+        true
+      end
+
+      ##
+      # recover
+      def recover guid, eid, bid
+        file_dir = file_dir(:entry)
+        json_file = File.join file_dir, "#{guid}.json"
+        html_file = File.join file_dir, "#{guid}.html"
+
+        link_dir = link_dir(bid)
+        FileUtils.mkdir_p link_dir
+
+        json_link = File.join link_dir, "#{eid}.json"
+        html_link = File.join link_dir, "#{eid}.html"
+
+        # errorの可能性
+        File.symlink json_file, json_link
+        File.symlink html_file, html_link
+
+        update = UpdateManager.new Table.engine
+        update.table db.sync
+        update.set([
+                     [db.sync[:deleted], 0],
+                     [db.sync[:bid],     bid]
+                   ])
+        update.where(db.sync[:note_guid].eq guid)
+        db.transaction do
+          db.execute update.to_sql
+          raise Fatal if 1 != db.changes
+        end
+
+        true
+      end
+
+      def file_dir dirname
+        File.join config.root, "files", dirname.to_s
+      end
+
+      def link_dir bid
+        File.join config.public_blog, bid.slice(0, 2), bid
+      end
+
+      def save_link bid, eid, extension, file
+        dir = link_dir(bid)
+        FileUtils.mkdir_p dir
+        link = File.join dir, "#{eid}.#{extension}"
+
+        File.unlink link if File.symlink? link
+        File.symlink file, link
+
+        link
+      end
+
+      def save_file dirname, guid, extension, content
+        dir  = file_dir dirname
+        FileUtils.mkdir_p dir
+        file = File.join dir, "#{guid}.#{extension}"
+        File.open file, "w" do |fp|
+          fp.write content
+        end
+
+        file
+      end
+
+      class << self
+        include Emark::Publish::Entry
+
+        def run
+          entry = dequeue
+          if entry.!
+            logger.debug "Emark::Publish::Entry:empty"
+            return :empty
+          end
+          guid    = entry[:note_guid]
+          bid     = entry[:bid]
+          updated = entry[:updated]
+
+          begin
+            detect guid, updated
+          rescue Delete
+            delete guid, eid, bid
+            logger.info "Emark::Publish::Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
+            return :delete
+          rescue Recover
+            recover guid, eid, bid
+            logger.info "Emark::Publish::Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
+            return :recover
+          end
+
+          session   = session(bid)
+          authtoken = session[:authtoken]
+          shard     = session[:shard]
+
+          note    = note guid, authtoken, shard
+          title   = note.title
+          created = note.created
+          updated = note.updated
+
+          eid = Subak::Utility.shorten_hash guid.gsub("-", "").slice(0, 4)
+
+          markdown = markdown(note, shard)
+          json     = entry_json(guid, eid, markdown, title, created, updated)
+          html     = entry_html(guid, markdown, title)
+
+          thread do
+            save_file :markdown, guid, :markdown, markdown
+            json_path = save_file :entry, guid, :json, json
+            html_path = save_file :entry, guid, :html, html
+            save_link bid, eid, :json, json_path
+            save_link bid, eid, :html, html_path
+          end
+
+          update_sync guid, eid, bid, title, created, updated
+          delete_queue guid
+
+          logger.info "Emark::Publish::Entry.run bid:#{bid}, eid:#{eid}, guid:#{guid}"
+
+          true
+        end
       end
     end
   end
