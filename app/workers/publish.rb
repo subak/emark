@@ -22,9 +22,68 @@ require "subak/utility"
 
 require "./lib/override/sqlite3"
 
+ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
+ActiveRecord::Base.establish_connection config.environment
+include Arel
+Table.engine = ActiveRecord::Base
+
+Scope ||= {}
+
+def scope
+  ActiveRecord::Base.establish_connection config.environment
+  db = ActiveRecord::Base.connection.raw_connection
+  db.busy_handler do
+    fb = Fiber.current
+    EM.add_timer do
+      fb.resume true
+    end
+    Fiber.yield
+  end
+
+  def db.blog_q
+    Table.new(:blog_q)
+  end
+
+  def db.entry_q
+    Table.new(:entry_q)
+  end
+
+  def db.meta_q
+    Table.new(:meta_q)
+  end
+
+  def db.session
+    Table.new(:session)
+  end
+
+  def db.blog
+    Table.new(:blog)
+  end
+
+  def db.sync
+    Table.new(:sync)
+  end
+
+  logger = Logger.new(STDOUT)
+  logger.level = config.logger_level
+
+  Scope[:db]     = db
+  Scope[:logger] = logger
+end
+
+def db
+  Scope[:db]
+end
+
+def logger
+  Scope[:logger]
+end
 
 module Emark
   module Publish
+    class Empty < Exception; end
+    class Fatal < Exception; end
+
     private
     def session bid
       select = db.session.project(SqlLiteral.new "*")
