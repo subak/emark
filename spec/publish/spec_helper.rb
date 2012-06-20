@@ -22,7 +22,7 @@ require "./lib/override/sqlite3"
 require "./config/environment"
 
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
-ActiveRecord::Base.establish_connection :spec
+ActiveRecord::Base.establish_connection config.environment
 include Arel
 Table.engine = ActiveRecord::Base
 
@@ -62,7 +62,7 @@ end
 logger = Logger.new(STDOUT)
 logger.level = config.logger_level
 
-Vars = {}
+Vars ||= {}
 Vars[:db]     = db
 Vars[:logger] = logger
 

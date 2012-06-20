@@ -6,6 +6,36 @@ module Emark
       class Delete < Exception; end
       class Recover < Exception; end
 
+      def file_dir dirname
+        File.join config.root, "files", dirname.to_s
+      end
+
+      def link_dir bid
+        File.join config.public_blog, bid.slice(0, 2), bid
+      end
+
+      def save_link bid, eid, extension, file
+        dir = link_dir(bid)
+        FileUtils.mkdir_p dir
+        link = File.join dir, "#{eid}.#{extension}"
+
+        File.unlink link if File.symlink? link
+        File.symlink file, link
+
+        link
+      end
+
+      def save_file dirname, guid, extension, content
+        dir  = file_dir dirname
+        FileUtils.mkdir_p dir
+        file = File.join dir, "#{guid}.#{extension}"
+        File.open file, "w" do |fp|
+          fp.write content
+        end
+
+        file
+      end
+
       def dequeue
         select = db.entry_q.project(SqlLiteral.new "*")
         select.where(db.entry_q[:lock].eq 0)
@@ -243,36 +273,6 @@ HAML
         true
       end
 
-      def file_dir dirname
-        File.join config.root, "files", dirname.to_s
-      end
-
-      def link_dir bid
-        File.join config.public_blog, bid.slice(0, 2), bid
-      end
-
-      def save_link bid, eid, extension, file
-        dir = link_dir(bid)
-        FileUtils.mkdir_p dir
-        link = File.join dir, "#{eid}.#{extension}"
-
-        File.unlink link if File.symlink? link
-        File.symlink file, link
-
-        link
-      end
-
-      def save_file dirname, guid, extension, content
-        dir  = file_dir dirname
-        FileUtils.mkdir_p dir
-        file = File.join dir, "#{guid}.#{extension}"
-        File.open file, "w" do |fp|
-          fp.write content
-        end
-
-        file
-      end
-
       class << self
         include Emark::Publish::Entry
 
@@ -285,6 +285,9 @@ HAML
           guid    = entry[:note_guid]
           bid     = entry[:bid]
           updated = entry[:updated]
+          eid     = Subak::Utility.shorten_hash(guid.gsub("-", "")).slice(0, 4)
+          logger.debug guid
+          logger.debug eid
 
           begin
             detect guid, updated
@@ -306,8 +309,6 @@ HAML
           title   = note.title
           created = note.created
           updated = note.updated
-
-          eid = Subak::Utility.shorten_hash guid.gsub("-", "").slice(0, 4)
 
           markdown = markdown(note, shard)
           json     = entry_json(guid, eid, markdown, title, created, updated)

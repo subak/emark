@@ -1,15 +1,23 @@
 # -*- coding: utf-8; -*-
 
+require "simplecov"
+SimpleCov.start do
+  add_filter "vendor/bundle/"
+  add_filter "lib/Evernote/"
+end
+
 require "./app/workers/meta"
 require "./spec/publish/spec_helper"
 
 RSpec.configure do
   include Helper
-  include Emark::Publish::Meta
 end
 
-
 describe Emark::Publish::Meta do
+  Rspec.configure do
+    include Emark::Publish::Meta
+  end
+
   before:all do
     @bid    = "test.example.com"
     @title  = "my first blog"
@@ -91,12 +99,8 @@ describe Emark::Publish::Meta do
         select = db.meta_q.project(db.meta_q[:lock])
         select.where(db.meta_q[:bid].eq @bid)
         db.get_first_value(select.to_sql).should == 1
-      end
 
-      it Emark::Publish::Fatal do
-        proc do
-          dequeue
-        end.should raise_error(Emark::Publish::Fatal)
+        dequeue()[:empty].should be_true
       end
 
       it "delete_queue" do
@@ -130,21 +134,6 @@ describe Emark::Publish::Meta do
       delete_blog
       delete_sync
 
-      insert  = db.meta_q.insert_manager
-      insert.insert([
-                      [db.meta_q[:bid],    @bid],
-                      [db.meta_q[:queued], Time.now.to_f]
-                    ])
-      db.execute insert.to_sql
-
-      # insert = db.entry_q.insert_manager
-      # insert.insert([
-      #                 [db.entry_q[:note_guid], "012345"],
-      #                 [db.entry_q[:queued],    Time.now.to_f],
-      #                 [db.entry_q[:bid],       @bid]
-      #               ])
-      # db.execute insert.to_sql
-
       insert = db.blog.insert_manager
       insert.insert([
                       [db.blog[:bid],      @bid],
@@ -168,8 +157,42 @@ describe Emark::Publish::Meta do
     end
 
     it "throught" do
+      insert  = db.meta_q.insert_manager
+      insert.insert([
+                      [db.meta_q[:bid],    @bid],
+                      [db.meta_q[:queued], Time.now.to_f]
+                    ])
+      db.execute insert.to_sql
+
       sync do
-        Emark::Publish::Meta.run
+        Emark::Publish::Meta.run.should be_true
+      end
+    end
+
+    it "empty" do
+      sync do
+        Emark::Publish::Meta.run.should == :empty
+      end
+    end
+
+    it "left" do
+      insert  = db.meta_q.insert_manager
+      insert.insert([
+                      [db.meta_q[:bid],    @bid],
+                      [db.meta_q[:queued], Time.now.to_f]
+                    ])
+      db.execute insert.to_sql
+
+      insert = db.entry_q.insert_manager
+      insert.insert([
+                      [db.entry_q[:note_guid], "012345"],
+                      [db.entry_q[:queued],    Time.now.to_f],
+                      [db.entry_q[:bid],       @bid]
+                    ])
+      db.execute insert.to_sql
+
+      sync do
+        Emark::Publish::Meta.run.should == :left
       end
     end
   end

@@ -1,5 +1,11 @@
 # -*- coding: utf-8; -*-
 
+require "simplecov"
+SimpleCov.start do
+  add_filter "vendor/bundle/"
+  add_filter "lib/Evernote/"
+end
+
 require "./app/workers/blog"
 require "./spec/publish/spec_helper"
 

@@ -1,15 +1,23 @@
 # -*- coding: utf-8; -*-
 
+require "simplecov"
+SimpleCov.start do
+  add_filter "vendor/bundle/"
+  add_filter "lib/Evernote/"
+end
+
 require "./app/workers/entry"
 require "./spec/publish/spec_helper"
 
 RSpec.configure do
   include Helper
-  include Emark::Publish::Entry
-#  include Emark::Publish::Entry::Helper
 end
 
 describe Emark::Publish::Entry do
+  RSpec.configure do
+    include Emark::Publish::Entry
+  end
+
   before:all do
     get_session
     @bid     = "test.example.com"
@@ -237,7 +245,7 @@ describe Emark::Publish::Entry do
 
         @bid  = "test.example.com"
         @guid = get_real_guid @session[:authtoken], @session[:shard]
-        @eid  = Subak::Utility.shorten_hash(@guid.gsub("-", "").slice(0, 4))
+        @eid  = Subak::Utility.shorten_hash(@guid.gsub("-", "")).slice(0, 4)
 
         insert = db.blog.insert_manager
         insert.insert([
@@ -249,7 +257,7 @@ describe Emark::Publish::Entry do
         insert = db.entry_q.insert_manager
         insert.insert([
                         [db.entry_q[:note_guid], @guid],
-                        [db.entry_q[:updated],   Time.now.to_f * 1000],
+                        [db.entry_q[:updated],   Time.now.to_i * 1000],
                         [db.entry_q[:bid],       @bid],
                         [db.entry_q[:queued],    Time.now.to_f]
                       ])
@@ -263,66 +271,39 @@ describe Emark::Publish::Entry do
       end
 
       it "delete" do
-        delete(@guid, @eid, @bid).should be_true
-      end
-
-      it "recover" do
-        recover(@guid, @eid, @bid).should be_true
-      end
-    end
-  end
-
-
-end
-__END__
-
-
-
-
-
-  describe "run" do
-    it "empty" do
-      @entry_q.run.should == :empty
-    end
-
-    describe "ok" do
-      before:all do
-        delete_entry_q
-        delete_blog
-        delete_sync
-        get_session
-
-        @bid  = "test.example.com"
-        @guid = get_real_guid @session[:authtoken], @session[:shard]
-        @eid  = Subak::Utility.shorten_hash(@guid.gsub("-", "").slice(0, 4))
-
-        insert = db.blog.insert_manager
-        insert.insert([
-                        [db.blog[:uid], @session[:uid]],
-                        [db.blog[:bid], @bid]
-                      ])
-        db.execute insert.to_sql
-
         insert = db.entry_q.insert_manager
         insert.insert([
                         [db.entry_q[:note_guid], @guid],
-                        [db.entry_q[:updated],   Time.now.to_f * 1000],
+                        [db.entry_q[:updated],   nil],
                         [db.entry_q[:bid],       @bid],
                         [db.entry_q[:queued],    Time.now.to_f]
                       ])
         db.execute insert.to_sql
-      end
 
-      it "through" do
-        @entry_q.run
-      end
-
-      it "delete" do
-        @entry_q.step_2_1(@guid, @eid, @bid).should be_true
+        sync do
+          Emark::Publish::Entry.run.should == :delete
+        end
       end
 
       it "recover" do
-        @entry_q.step_2_2(@guid, @eid, @bid).should be_true
+        delete_entry_q
+
+        select = db.sync.project(db.sync[:updated])
+        select.where(db.sync[:note_guid].eq @guid)
+        update_sync = db.get_first_value select.to_sql
+
+        insert = db.entry_q.insert_manager
+        insert.insert([
+                        [db.entry_q[:note_guid], @guid],
+                        [db.entry_q[:updated],   update_sync],
+                        [db.entry_q[:bid],       @bid],
+                        [db.entry_q[:queued],    Time.now.to_f]
+                      ])
+        db.execute insert.to_sql
+
+        sync do
+          Emark::Publish::Entry.run.should == :recover
+        end
       end
     end
   end
