@@ -308,7 +308,7 @@ HAML
           authtoken = session[:authtoken]
           shard     = session[:shard]
 
-          note    = note guid, authtoken, shard
+          note    = thread { note guid, authtoken, shard }
           title   = note.title
           created = note.created
           updated = note.updated

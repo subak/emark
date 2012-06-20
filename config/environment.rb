@@ -28,6 +28,7 @@ when "production"
   config.nginx_conf =     "/home/www/nginx/conf/include/emark.conf"
   config.logger_level =   Logger::WARN
   config.thread_abort =   false
+  config.cpu_core =       3
 else
   config.site_protocol =  "http"
   config.site_host =      "localhost"
@@ -38,6 +39,7 @@ else
   config.nginx_conf =     "/Volumes/Data/Users/hiro/Dev/nginx/conf/include/emark.conf"
   config.logger_level =   Logger::DEBUG
   config.thread_abort =   true
+  config.cpu_core =       1
 end
 
 config.site_hostname =  "#{config.site_host}" + case (p = config.site_port) when 443,80,nil then "" else ":#{p}" end

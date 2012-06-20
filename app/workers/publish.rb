@@ -27,8 +27,7 @@ ActiveRecord::Base.establish_connection config.environment
 include Arel
 Table.engine = ActiveRecord::Base
 
-Scope ||= {}
-
+Scope = {vars: {}}
 def scope
   ActiveRecord::Base.establish_connection config.environment
   db = ActiveRecord::Base.connection.raw_connection
@@ -66,17 +65,47 @@ def scope
 
   logger = Logger.new(STDOUT)
   logger.level = config.logger_level
+  logger.level = Logger::INFO
 
-  Scope[:db]     = db
-  Scope[:logger] = logger
+  Scope[:vars] = {
+    db:     db,
+    logger: logger
+  }
 end
 
 def db
-  Scope[:db]
+  Scope[:vars][:db]
 end
 
 def logger
-  Scope[:logger]
+  Scope[:vars][:logger]
+end
+
+def delete_expired_queue_blog
+  delete = DeleteManager.new Table.engine
+  delete.from db.blog_q
+  delete.where(db.blog_q[:lock].eq 1)
+  delete.where db.blog_q[:queued].lt(Time.now.to_f - 300)
+  sql = delete.to_sql; logger.debug sql
+  db.execute sql
+end
+
+def delete_expired_queue_entry
+  delete = DeleteManager.new Table.engine
+  delete.from db.entry_q
+  delete.where(db.entry_q[:lock].eq 1)
+  delete.where db.entry_q[:queued].lt(Time.now.to_f - 300)
+  sql = delete.to_sql; logger.debug sql
+  db.execute sql
+end
+
+def delete_expired_queue_meta
+  delete = DeleteManager.new Table.engine
+  delete.from db.meta_q
+  delete.where(db.meta_q[:lock].eq 1)
+  delete.where db.meta_q[:queued].lt(Time.now.to_f - 300)
+  sql = delete.to_sql; logger.debug sql
+  db.execute sql
 end
 
 module Emark

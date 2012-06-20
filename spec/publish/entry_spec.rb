@@ -104,55 +104,35 @@ describe Emark::Publish::Entry do
     end
   end
 
-  # describe "session" do
-  #   it Emark::Publish::Fatal do
-  #     proc do
-  #       session nil
-  #     end.should raise_error Emark::Publish::Fatal
-  #   end
 
-  #   it "session取得" do
-  #     delete_blog
-  #     insert = db.blog.insert_manager
-  #     insert.insert([
-  #                     [db.blog[:uid], @session[:uid]],
-  #                     [db.blog[:bid], @bid]
-  #                   ])
-  #     db.execute insert.to_sql
-
-  #     session = session @bid
-  #     session[:authtoken].should == @session[:authtoken]
-  #   end
-  # end
-
-  describe "note" do
-    it Exception do
-      begin
-        note "dummy_guid", @session[:authtoken], @session[:shard], @session[:notebook]
-#        @entry_q.step_4 "dummy_guid", @session[:authtoken], @session[:shard], @session[:notebook]
-      rescue Exception => e
-        e
-      end.should be_a_kind_of(Exception)
+  describe "evenote api にアクセス" do
+    before:all do
+      @guid = get_real_guid @session[:authtoken], @session[:shard]
+      @note = note @guid, @session[:authtoken], @session[:shard]
     end
 
-    it "ok" do
-      guid = get_real_guid @session[:authtoken], @session[:shard]
-      note = note guid, @session[:authtoken], @session[:shard]
+    describe "note" do
+      it Exception do
+        begin
+          note "dummy_guid", @session[:authtoken], @session[:shard], @session[:notebook]
+        rescue Exception => e
+          e
+        end.should be_a_kind_of(Exception)
+      end
 
-      note.guid.should == guid
-      Vars[:note] = note
+      it "ok" do
+        @note.guid.should == @guid
+      end
+    end
+
+    ##
+    # fixtureを用意したほうがよさそう
+    describe "markdown" do
+      it "markdownテキストを出力" do
+        markdown(@note, @session[:shard]).should_not be_nil
+      end
     end
   end
-
-  ##
-  # fixtureを用意したほうがよさそう
-  describe "markdown" do
-    it "markdownテキストを出力" do
-      note = Vars[:note]
-      markdown(note, @session[:shard]).should_not be_nil
-    end
-  end
-
 
   describe "write down" do
     before:all do
