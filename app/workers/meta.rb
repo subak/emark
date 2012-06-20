@@ -1,5 +1,7 @@
 # -*- coding: utf-8; -*-
 
+require File.join File.expand_path(__FILE__), "../publish"
+
 module Emark
   module Publish
     module Meta
@@ -185,6 +187,7 @@ HAML
       end
 
       class << self
+        include Emark::Publish
         include Emark::Publish::Meta
 
         def run

@@ -104,27 +104,26 @@ describe Emark::Publish::Entry do
     end
   end
 
+  # describe "session" do
+  #   it Emark::Publish::Fatal do
+  #     proc do
+  #       session nil
+  #     end.should raise_error Emark::Publish::Fatal
+  #   end
 
-  describe "session" do
-    it Emark::Publish::Fatal do
-      proc do
-        session nil
-      end.should raise_error Emark::Publish::Fatal
-    end
+  #   it "session取得" do
+  #     delete_blog
+  #     insert = db.blog.insert_manager
+  #     insert.insert([
+  #                     [db.blog[:uid], @session[:uid]],
+  #                     [db.blog[:bid], @bid]
+  #                   ])
+  #     db.execute insert.to_sql
 
-    it "session取得" do
-      delete_blog
-      insert = db.blog.insert_manager
-      insert.insert([
-                      [db.blog[:uid], @session[:uid]],
-                      [db.blog[:bid], @bid]
-                    ])
-      db.execute insert.to_sql
-
-      session = session @bid
-      session[:authtoken].should == @session[:authtoken]
-    end
-  end
+  #     session = session @bid
+  #     session[:authtoken].should == @session[:authtoken]
+  #   end
+  # end
 
   describe "note" do
     it Exception do
