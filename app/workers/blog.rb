@@ -2,63 +2,45 @@
 
 module Emark
   module Publish
-    class Blog
-      attr_accessor :db, :logger, :bid
+    private
+    def session bid
+      select = db.session.project(SqlLiteral.new "*")
+      select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])
+      select.where(db.blog[:bid].eq bid)
+      select.take 1
 
-      def initialize db, logger
-        @db     = db
-        @logger = logger
-      end
+      sql = select.to_sql; logger.debug sql
+      session = db.get_first_row sql
+      raise Fatal if session.!
+      session
+    end
 
-      def run
-        @bid  = step_1
-        row   = step_2 @bid
-        notes = thread do
-          step_3 row[:authtoken], row[:shard], row[:notebook]
-        end
+    module Blog
 
-        sync_notes = step_4 notes
+      private
 
-        enqueues = step_5 sync_notes
-        step_6 sync_notes
+      def dequeue
+        select = db.blog_q.project(db.blog_q[:bid])
+        select.where(db.blog_q[:lock].eq 0)
+        select.order db.blog_q[:queued].asc
+        select.take 1
+        bid = db.get_first_value select.to_sql
+        return nil if bid.!
 
+        update = UpdateManager.new Table.engine
+        update.table db.blog_q
+        update.set([
+                     [db.blog_q[:lock], 1]
+                   ])
+        update.where(db.blog_q[:bid].eq bid)
+        update.where(db.blog_q[:lock].eq 0)
+        db.execute update.to_sql
+        raise Fatal if db.changes != 1
 
-        @logger.info "Emark::Publish::Blog => #{enqueues} entries enqueued."
-
-        @bid  = nil
-        enqueues
-      end
-
-      def step_1
-        bid = nil
-        db.transaction do
-          select = db.blog_q.project(db.blog_q[:bid])
-          select.order db.blog_q[:queued].asc
-          select.take 1
-          bid = db.get_first_value select.to_sql
-          raise Empty if bid.!
-
-          delete = DeleteManager.new Table.engine
-          delete.from db.blog_q
-          delete.where(db.blog_q[:bid].eq bid)
-          db.execute delete.to_sql
-          raise Fatal if (db.changes >= 1).!
-        end
         bid
       end
 
-      def step_2 bid
-        select = db.session.project(db.session[:authtoken], db.session[:shard], db.blog[:notebook])
-        select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])
-        select.where(db.blog[:bid].eq bid)
-        select.take 1
-
-        row = db.get_first_row select.to_sql
-        raise Fatal if row.!
-        row
-      end
-
-      def step_3 authtoken, shard, notebook
+      def find_notes authtoken, shard, notebook
         noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{shard}")
         noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
         noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
@@ -80,12 +62,11 @@ module Emark
         noteStore.findNotesMetadata(authtoken, filter, 0, config.evernote_user_notes_max, resultSpec)
       end
 
-      # 同期すべきnoteの検出
-      def step_4 notesMetadataList
+      def detect notesMetadataList, bid
         notesA = {}
         select = db.sync.project(db.sync[:note_guid], db.sync[:updated])
         select.where(db.sync[:deleted].eq 0)
-        select.where(db.sync[:bid].eq @bid)
+        select.where(db.sync[:bid].eq bid)
         db.execute select.to_sql do |row|
           notesA[row[:note_guid]] = row[:updated]
         end
@@ -125,9 +106,7 @@ module Emark
         syncNotes
       end
 
-      ##
-      # キューを入れる
-      def step_5 sync_notes
+      def enqueue_entry bid, sync_notes
         result = 0
         return result if sync_notes.empty?
 
@@ -138,13 +117,13 @@ module Emark
             insert.insert([
                             [db.entry_q[:note_guid], guid],
                             [db.entry_q[:updated],   updated],
-                            [db.entry_q[:bid],       @bid],
+                            [db.entry_q[:bid],       bid],
                             [db.entry_q[:queued],    Time.now.to_f]
                           ])
             begin
               db.execute insert.to_sql
             rescue SQLite3::ConstraintException => e
-              logger.warn "#{e.class}: #{e.message} #{__FILE__}:#{__LINE__}"
+              logger.warn "Emark::Publish::Blog.enqueue_entry #{e.class}: #{e.message} #{__FILE__}:#{__LINE__}"
             else
               result += 1
             end
@@ -154,20 +133,20 @@ module Emark
         result
       end
 
-      def step_6 sync_notes
+      def enqueue_meta bid, sync_notes
         result = false
         return result if sync_notes.empty?
 
         # metaテーブルにキューを入れる
         insert = db.meta_q.insert_manager
         insert.insert([
-                        [db.meta_q[:bid],    @bid],
+                        [db.meta_q[:bid],    bid],
                         [db.meta_q[:queued], Time.now.to_f]
                       ])
         begin
           db.execute insert.to_sql
         rescue SQLite3::ConstraintException => e
-          logger.warn "#{e.class}: #{e.message} #{__FILE__}:#{__LINE__}"
+          logger.warn "Emark::Publish::Blog.enqueue_meta #{e.class}: #{e.message} #{__FILE__}:#{__LINE__}"
         else
           result = true
         end
@@ -175,7 +154,46 @@ module Emark
         result
       end
 
+      def delete_queue bid
+        delete = DeleteManager.new Table.engine
+        delete.from db.blog_q
+        delete.where(db.blog_q[:bid].eq  bid)
+        delete.where(db.blog_q[:lock].eq 1)
+        db.execute delete.to_sql
+        raise Fatal if db.changes != 1
+
+        true
+      end
+
+      class << self
+        include Emark::Publish
+        include Emark::Publish::Blog
+
+        def run
+          bid = dequeue
+          if bid.!
+            logger.debug "Emark::Publish::Blog.run:empty"
+            return :empty
+          end
+
+          session = session bid
+
+          notes = thread do
+            find_notes session[:authtoken], session[:shard], session[:notebook]
+          end
+
+          sync_notes = detect notes, bid
+
+          count = enqueue_entry bid, sync_notes
+          enqueue_meta  bid, sync_notes
+
+          delete_queue bid
+
+          logger.info "Emark::Publish::Blog.run bid:#{bid}, count:#{count}"
+
+          true
+        end
+      end
     end
   end
 end
-

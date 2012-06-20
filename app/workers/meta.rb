@@ -28,78 +28,6 @@ module Emark
         true
       end
 
-      def sitemap entries
-        haml = <<'HAML'
-!!! XML
-%urlset{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
-- entries.each do |entry|
-  %url
-    %loc=     "http://#{entry[:bid]}/#{entry[:eid]}"
-    %lastmod= entry[:created]
-HAML
-
-        Haml::Engine.new(haml).render(self, entries: entries)
-      end
-
-      def atom entries, blog
-        haml = <<'HAML'
-!!! XML
-%feed{xmlns: "http://www.w3.org/2005/Atom"}
-  %title
-    :cdata
-      #{blog[:title]}
-  %subtitle
-    :cdata
-      #{blog[:subtitle]}
-  %link{href: "http://#{blog[:bid]}/atom.xml", rel: "self"}
-  %link{href: "http://#{blog[:bid]}/"}
-  %updated= Time.now.utc.iso8601
-  %id= "http://#{blog[:bid]}/"
-  %author
-    %name
-      :cdata
-        #{blog[:author]}
-  %generator{uri: "http://emark.jp/", version: 0.1} Emark
-  - entries.each do |entry|
-    - uri = "http://#{entry[:bid]}/#{entry[:eid]}"
-    %entry
-      %title
-        :cdata
-          #{entry[:title]}
-      %link{href: uri}
-      %updated= entry[:updated]
-      %id= uri
-HAML
-
-        Haml::Engine.new(haml).
-          render(self,
-          entries: entries,
-          blog:    blog)
-      end
-
-      def index_html entries, blog
-        haml = <<'HAML'
-!!!
-%html
-  %head
-    %meta{charset: "utf-8"}
-    %meta{name: "description", content: blog[:subtitle]}
-    %meta{name: "author",      content: blog[:author]}
-    %title{title:  blog[:title]}
-  %body
-    %header
-      %hgroup
-        %h1= blog[:title]
-        %h2= blog[:subtitle]
-    - entries.each do |entry|
-      %article
-        %h1= entry[:title]
-HAML
-
-        Haml::Engine.new(haml, :format => :html5).
-          render(self, entries: entries, blog: blog)
-      end
-
       def dequeue
         select = db.meta_q.project(db.meta_q[:bid])
         select.where(db.meta_q[:lock].eq 0)
@@ -172,6 +100,78 @@ HAML
         end
 
         entries
+      end
+
+      def sitemap entries
+        haml = <<'HAML'
+!!! XML
+%urlset{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
+- entries.each do |entry|
+  %url
+    %loc=     "http://#{entry[:bid]}/#{entry[:eid]}"
+    %lastmod= entry[:created]
+HAML
+
+        Haml::Engine.new(haml).render(self, entries: entries)
+      end
+
+      def atom entries, blog
+        haml = <<'HAML'
+!!! XML
+%feed{xmlns: "http://www.w3.org/2005/Atom"}
+  %title
+    :cdata
+      #{blog[:title]}
+  %subtitle
+    :cdata
+      #{blog[:subtitle]}
+  %link{href: "http://#{blog[:bid]}/atom.xml", rel: "self"}
+  %link{href: "http://#{blog[:bid]}/"}
+  %updated= Time.now.utc.iso8601
+  %id= "http://#{blog[:bid]}/"
+  %author
+    %name
+      :cdata
+        #{blog[:author]}
+  %generator{uri: "http://emark.jp/", version: 0.1} Emark
+  - entries.each do |entry|
+    - uri = "http://#{entry[:bid]}/#{entry[:eid]}"
+    %entry
+      %title
+        :cdata
+          #{entry[:title]}
+      %link{href: uri}
+      %updated= entry[:updated]
+      %id= uri
+HAML
+
+        Haml::Engine.new(haml).
+          render(self,
+          entries: entries,
+          blog:    blog)
+      end
+
+      def index_html entries, blog
+        haml = <<'HAML'
+!!!
+%html
+  %head
+    %meta{charset: "utf-8"}
+    %meta{name: "description", content: blog[:subtitle]}
+    %meta{name: "author",      content: blog[:author]}
+    %title{title:  blog[:title]}
+  %body
+    %header
+      %hgroup
+        %h1= blog[:title]
+        %h2= blog[:subtitle]
+    - entries.each do |entry|
+      %article
+        %h1= entry[:title]
+HAML
+
+        Haml::Engine.new(haml, :format => :html5).
+          render(self, entries: entries, blog: blog)
       end
 
       def delete_queue bid

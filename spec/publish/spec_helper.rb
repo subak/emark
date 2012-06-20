@@ -155,4 +155,13 @@ module Helper
     notes = noteStore.findNotes authtoken, filter, 0, 1
     notes.notes[0].guid
   end
+
+  def notebook_guid authtoken, shard
+    noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{shard}")
+    noteStoreProtocol =  Thrift::BinaryProtocol.new(noteStoreTransport)
+    noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
+    notebooks = noteStore.listNotebooks(authtoken)
+
+    notebooks.first.guid
+  end
 end
