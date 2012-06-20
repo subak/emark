@@ -1,5 +1,28 @@
 # -*- coding: utf-8 -*-
 
+require "fiber"
+require "pp"
+require "logger"
+require "yaml"
+require "digest"
+require "bundler"
+Bundler.require :default, :publish
+
+require "./config/environment"
+
+include Emark
+$: << "./lib/Evernote/EDAM"
+require 'note_store'
+require 'limits_constants'
+require "user_store"
+require "user_store_constants.rb"
+require "errors_types.rb"
+
+require "subak/utility"
+
+require "./lib/override/sqlite3"
+
+
 module Emark
   module Publish
     private

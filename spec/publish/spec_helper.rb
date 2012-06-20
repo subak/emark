@@ -1,31 +1,10 @@
 # -*- coding: utf-8; -*-
 
-require "fiber"
-require "pp"
-require "logger"
-require "yaml"
-require "digest"
-require "bundler"
-Bundler.require :default, :publish
-
-include Emark
-$: << "./lib/Evernote/EDAM"
-require 'note_store'
-require 'limits_constants'
-require "user_store"
-require "user_store_constants.rb"
-require "errors_types.rb"
-
-require "subak/utility"
-
-require "./lib/override/sqlite3"
-require "./config/environment"
-
 ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
-ActiveRecord::Base.establish_connection config.environment
 include Arel
 Table.engine = ActiveRecord::Base
 
+ActiveRecord::Base.establish_connection config.environment
 db = ActiveRecord::Base.connection.raw_connection
 db.busy_handler do
   fb = Fiber.current
