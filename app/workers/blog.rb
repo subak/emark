@@ -161,7 +161,7 @@ module Emark
         def run
           bid = dequeue
           if bid.!
-            logger.debug "Emark::Publish::Blog.run:empty"
+            logger.debug "Blog.run:empty"
             return :empty
           end
 
@@ -178,7 +178,7 @@ module Emark
 
           delete_queue bid
 
-          logger.info "Emark::Publish::Blog.run bid:#{bid}, count:#{count}"
+          logger.info "Blog.run bid:#{bid}, count:#{count}"
 
           true
         end

@@ -65,7 +65,6 @@ def scope
 
   logger = Logger.new(STDOUT)
   logger.level = config.logger_level
-  logger.level = Logger::INFO
 
   Scope[:vars] = {
     db:     db,
@@ -81,31 +80,51 @@ def logger
   Scope[:vars][:logger]
 end
 
-def delete_expired_queue_blog
-  delete = DeleteManager.new Table.engine
-  delete.from db.blog_q
-  delete.where(db.blog_q[:lock].eq 1)
-  delete.where db.blog_q[:queued].lt(Time.now.to_f - 300)
-  sql = delete.to_sql; logger.debug sql
+def delete_expired_queue_blog limit
+  update = UpdateManager.new Table.engine
+  update.table db.blog_q
+  update.set([
+               [db.blog_q[:lock], 0]
+             ])
+  update.where(db.blog_q[:lock].eq 1)
+  update.where db.blog_q[:queued].lt(Time.now.to_f - limit)
+  sql = update.to_sql
   db.execute sql
+  logger.info sql if db.changes >= 1
+
 end
 
-def delete_expired_queue_entry
+def delete_expired_queue_entry limit
   delete = DeleteManager.new Table.engine
   delete.from db.entry_q
   delete.where(db.entry_q[:lock].eq 1)
-  delete.where db.entry_q[:queued].lt(Time.now.to_f - 300)
-  sql = delete.to_sql; logger.debug sql
+  delete.where db.entry_q[:queued].lt(Time.now.to_f - limit)
+  sql = delete.to_sql
   db.execute sql
+  logger.info sql if db.changes >= 1
+
+  # update = UpdateManager.new Table.engine
+  # update.table db.entry_q
+  # update.set([
+  #              [db.entry_q[:lock], 0]
+  #            ])
+  # update.where(db.entry_q[:lock].eq 1)
+  # update.where db.entry_q[:queued].lt(Time.now.to_f - limit)
+  # sql = update.to_sql; logger.debug sql
+  # db.execute sql
 end
 
-def delete_expired_queue_meta
-  delete = DeleteManager.new Table.engine
-  delete.from db.meta_q
-  delete.where(db.meta_q[:lock].eq 1)
-  delete.where db.meta_q[:queued].lt(Time.now.to_f - 300)
-  sql = delete.to_sql; logger.debug sql
+def delete_expired_queue_meta limit
+  update = UpdateManager.new Table.engine
+  update.table db.meta_q
+  update.set([
+               [db.meta_q[:lock], 0]
+             ])
+  update.where(db.meta_q[:lock].eq 1)
+  update.where db.meta_q[:queued].lt(Time.now.to_f - limit)
+  sql = update.to_sql
   db.execute sql
+  logger.info sql if db.changes >= 1
 end
 
 module Emark

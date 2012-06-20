@@ -194,10 +194,10 @@ HAML
           res = dequeue
           case
           when res[:empty]
-            logger.debug "Emark::Publish::Meta#empty"
+            logger.debug "Meta:empty"
             return :empty
           when res[:left]
-            logger.info "Emark::Publish::Meta#left bid:#{res[:bid]}, count:#{res[:count]}"
+            logger.info "Meta:left bid:#{res[:bid]}, count:#{res[:count]}"
             return :left
           end
           bid = res[:bid]
@@ -230,6 +230,10 @@ HAML
           end
 
           delete_queue bid
+
+          logger.info "Meta.run bid:#{bid}, count:#{entries.size}"
+
+          true
         end
       end
     end

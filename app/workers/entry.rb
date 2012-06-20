@@ -8,8 +8,8 @@ module Emark
       class Delete < Exception; end
       class Recover < Exception; end
 
-      def file_dir dirname
-        File.join config.root, "files", dirname.to_s
+      def file_dir dirname, guid
+        File.join config.root, "files", dirname.to_s, guid.slice(0, 2)
       end
 
       def link_dir bid
@@ -28,7 +28,7 @@ module Emark
       end
 
       def save_file dirname, guid, extension, content
-        dir  = file_dir dirname
+        dir  = file_dir dirname, guid
         FileUtils.mkdir_p dir
         file = File.join dir, "#{guid}.#{extension}"
         File.open file, "w" do |fp|
@@ -246,7 +246,7 @@ HAML
       ##
       # recover
       def recover guid, eid, bid
-        file_dir = file_dir(:entry)
+        file_dir  = file_dir(:entry, guid)
         json_file = File.join file_dir, "#{guid}.json"
         html_file = File.join file_dir, "#{guid}.html"
 
@@ -282,7 +282,7 @@ HAML
         def run
           entry = dequeue
           if entry.!
-            logger.debug "Emark::Publish::Entry:empty"
+            logger.debug "Entry:empty"
             return :empty
           end
           guid    = entry[:note_guid]
@@ -296,11 +296,11 @@ HAML
             detect guid, updated
           rescue Delete
             delete guid, eid, bid
-            logger.info "Emark::Publish::Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
+            logger.info "Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
             return :delete
           rescue Recover
             recover guid, eid, bid
-            logger.info "Emark::Publish::Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
+            logger.info "Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
             return :recover
           end
 
@@ -309,7 +309,7 @@ HAML
           shard     = session[:shard]
 
           note    = thread { note guid, authtoken, shard }
-          title   = note.title
+          title   = note.title.force_encoding("UTF-8")
           created = note.created
           updated = note.updated
 
@@ -328,7 +328,7 @@ HAML
           update_sync guid, eid, bid, title, created, updated
           delete_queue guid
 
-          logger.info "Emark::Publish::Entry.run bid:#{bid}, eid:#{eid}, guid:#{guid}"
+          logger.info "Entry.run bid:#{bid}, eid:#{eid}, guid:#{guid}"
 
           true
         end

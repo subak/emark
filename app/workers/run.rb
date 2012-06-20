@@ -10,15 +10,17 @@ require File.join dir, "entry"
 require File.join dir, "meta"
 
 def run &block
-  begin
-    Fiber.new do
+  Fiber.new do
+    begin
       block.call
-    end.resume
-  rescue Emark::Publish::Fatal => e
-    logger.debug "#{e}"
-  rescue Exception => e
-    logger.debug e
-  end
+    rescue SQLite3::LockedException, SQLite3::BusyException => e
+      logger.debug "#{e}"
+    rescue Emark::Publish::Fatal => e
+      logger.debug "#{e}"
+    rescue Exception => e
+      logger.debug e
+    end
+  end.resume
 end
 
 config.cpu_core.times do
@@ -37,7 +39,7 @@ config.cpu_core.times do
         end
       end
 
-      EM.add_periodic_timer 0.5 do
+      EM.add_periodic_timer 1 do
         run do
           Emark::Publish::Meta.run
         end
@@ -48,9 +50,16 @@ end
 
 EM.run do
   scope
+  run do
+    delete_expired_queue_blog  0
+    delete_expired_queue_entry 0
+    delete_expired_queue_meta  0
+  end
   EM.add_periodic_timer 300 do
-    delete_expired_queue_blog
-    delete_expired_queue_entry
-    delete_expired_queue_meta
+    run do
+      delete_expired_queue_blog  300
+      delete_expired_queue_entry 300
+      delete_expired_queue_meta  300
+    end
   end
 end

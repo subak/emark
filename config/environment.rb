@@ -37,8 +37,9 @@ else
   config.admin_host =     "localhost"
   config.admin_port =     4430
   config.nginx_conf =     "/Volumes/Data/Users/hiro/Dev/nginx/conf/include/emark.conf"
-  config.logger_level =   Logger::DEBUG
-  config.thread_abort =   true
+#  config.logger_level =   Logger::DEBUG
+  config.logger_level =   Logger::INFO
+  config.thread_abort =   false
   config.cpu_core =       1
 end
 
