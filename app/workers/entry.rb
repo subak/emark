@@ -188,7 +188,8 @@ HAML
             insert = db.sync.insert_manager
             insert.insert data
             db.execute insert.to_sql
-          rescue SQLite3::ConstraintException
+          rescue SQLite3::ConstraintException => e
+            logger.debug "#{e}"
           else
             throw :insert
           end
@@ -291,6 +292,7 @@ HAML
           eid     = Subak::Utility.shorten_hash(guid.gsub("-", "")).slice(0, 4)
           logger.debug guid
           logger.debug eid
+          logger.info "Entry.run:begin bid:#{bid}, eid:#{eid}, guid:#{guid}"
 
           begin
             detect guid, updated

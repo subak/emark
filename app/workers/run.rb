@@ -13,8 +13,8 @@ def run &block
   Fiber.new do
     begin
       block.call
-    rescue SQLite3::LockedException, SQLite3::BusyException => e
-      logger.debug "#{e}"
+    # rescue SQLite3::LockedException, SQLite3::BusyException => e
+    #   logger.debug "#{e}"
     rescue Emark::Publish::Fatal => e
       logger.debug "#{e}"
     rescue Exception => e

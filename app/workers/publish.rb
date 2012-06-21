@@ -31,7 +31,8 @@ Scope = {vars: {}}
 def scope
   ActiveRecord::Base.establish_connection config.environment
   db = ActiveRecord::Base.connection.raw_connection
-  db.busy_handler do
+  db.busy_handler do |resouce, retries|
+    logger.info "busy"
     fb = Fiber.current
     EM.add_timer do
       fb.resume true
