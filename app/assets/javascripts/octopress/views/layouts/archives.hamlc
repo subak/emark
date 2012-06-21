@@ -1,0 +1,21 @@
+%div
+  %article{role: "article"}
+    - if @page?.title?
+      %header
+        %h1.entry-title= @page.title
+        - if @page?.date?
+          %p.meta
+            = @include("post/date")
+            = @page.time
+    #blog-archives
+      - previous_year = null
+      - for post in @site.posts
+        - year = post.year
+        - if year != previous_year
+          %h2= year
+        %article
+          %h1
+            %a{href: post.url}
+              = post.title
+            %time{datetime: post.date, pubdate: true}
+              = post.date

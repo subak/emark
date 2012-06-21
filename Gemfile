@@ -24,12 +24,14 @@ end
 
 group :assets do
 #  gem "rails"
+  gem "haml"
   gem "eco"
   gem "ejs"
   gem "sprockets"
   gem "spine-rails", :require => false
   gem "jquery-rails", :require => false
   gem "haml_coffee_assets"
+  gem "rb-fsevent"
 end
 
 group :test do
@@ -43,9 +45,7 @@ end
 group :cli do
   gem "standalone_migrations"
   gem "thin"
-
   gem "watchr"
-
   gem "simplecov"
   gem "rspec"
   gem "jasmine"

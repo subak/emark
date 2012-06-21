@@ -74,18 +74,6 @@ module Emark
         true
       end
 
-      # def session bid
-      #   select = db.session.project(db.session[:authtoken], db.session[:shard])
-      #   select.join(db.blog).on(db.session[:uid].eq db.blog[:uid])
-      #   select.where(db.blog[:bid].eq bid)
-      #   select.take 1
-
-      #   logger.debug select.to_sql
-      #   session = db.get_first_row select.to_sql
-      #   raise Fatal if session.!
-      #   session
-      # end
-
       def note guid, authtoken, shard
         noteStoreTransport = Thrift::HTTPClientTransport.new("#{config.evernote_site}/edam/note/#{shard}")
         noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)

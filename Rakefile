@@ -1,6 +1,21 @@
 require "pp"
 
 namespace:assets do
+  namespace:haml do
+    desc "assets:haml:octopress"
+    task:octopress do
+      require "bundler"
+      Bundler.require :assets
+      require "./config/environment"
+
+      octopress = "public/emark.jp/octopress/index.html"
+      File.open octopress, "w" do |fp|
+        fp.write Haml::Engine.new(File.read("app/views/layouts/octopress.haml"), :format => :html5).render
+      end
+      puts "write to #{octopress}"
+    end
+  end
+
   desc "assets:sprockets"
   task:sprockets do
     require "bundler"
@@ -24,18 +39,37 @@ namespace:assets do
 
     ##
     # octopress
-    content   = environment["octopress.js"].to_s
-    pp content
+    content   = environment["octopress.js.coffee"].to_s
     octopress = "public/emark.jp/octopress.js"
     File.open octopress, "w" do |fp|
       fp.write content
     end
+    puts "write to #{octopress}"
 
     ##
     # dashboard
+  end
 
+  namespace:sprockets do
+    desc "assets:sprockets:fsevent"
+    task:fsevent do
+      require "bundler"
+      Bundler.require :assets
+
+      fsevent = FSEvent.new
+      fsevent.watch ["app/assets/javascripts"] do
+        begin
+          Rake::Task["assets:sprockets"].execute
+        rescue Exception => e
+          pp e.backtrace
+        end
+      end
+      fsevent.run
+    end
   end
 end
+
+
 
 __END__
 

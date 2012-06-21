@@ -1,0 +1,22 @@
+%div
+  %article{role: "article"}
+    - if @page?.title?
+      %header
+        %h1.entry-title= @page.title
+        - if @page?.date?
+          %p.meta
+            = @include("post/date")
+            = @page.time
+      = "content"
+      - unless @page?.footer? == false
+        %footer
+          - if @page?.date? or @page?.author?
+            %p.meta
+              - if @page?.author?
+                = @include("post/author")
+              = @include("post/date")
+              - if @update?
+                = @update
+              - else
+                = @time
+  
