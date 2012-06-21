@@ -22,14 +22,14 @@ group :publish do
   gem "rdiscount"
 end
 
-
-group :sprockets do
-  gem "rails"
+group :assets do
+#  gem "rails"
   gem "eco"
   gem "ejs"
   gem "sprockets"
-  gem "spine-rails"
-  gem "jquery-rails"
+  gem "spine-rails", :require => false
+  gem "jquery-rails", :require => false
+  gem "haml_coffee_assets"
 end
 
 group :test do
@@ -45,8 +45,6 @@ group :cli do
   gem "thin"
 
   gem "watchr"
-
-  gem "haml_coffee_assets"
 
   gem "simplecov"
   gem "rspec"

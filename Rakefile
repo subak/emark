@@ -1,5 +1,44 @@
 require "pp"
 
+namespace:assets do
+  desc "assets:sprockets"
+  task:sprockets do
+    require "bundler"
+    Bundler.require :assets
+
+    vendors = []
+
+    $:.each do |path|
+      next if path !~ /\/lib$/
+      ["/vendor/assets/javascripts", "/app/assets/javascripts"].each do |suffix|
+        vendor = path.sub /\/lib$/, suffix
+        vendors << vendor if File.exist? vendor
+      end
+    end
+
+    environment = Sprockets::Environment.new
+    vendors.each do |vendor|
+      environment.append_path vendor
+      environment.append_path "app/assets/javascripts"
+    end
+
+    ##
+    # octopress
+    content   = environment["octopress.js"].to_s
+    pp content
+    octopress = "public/emark.jp/octopress.js"
+    File.open octopress, "w" do |fp|
+      fp.write content
+    end
+
+    ##
+    # dashboard
+
+  end
+end
+
+__END__
+
 desc "install"
 task :install do
   sh "bundle install --path vender/bundle"
@@ -55,32 +94,6 @@ task :config_js do
   puts "write to #{path}"
 end
 
-desc "sprockets"
-task:sprockets do
-  require "bundler"
-  Bundler.require :sprockets
-
-  vendors = []
-  $:.each do |path|
-    next if path !~ /\/lib$/
-    ["/vendor/assets/javascripts", "/app/assets/javascripts"].each do |suffix|
-      vendor = path.sub /\/lib$/, suffix
-      vendors << vendor if File.exist? vendor
-    end
-  end
-
-  environment = Sprockets::Environment.new
-  vendors.each do |vendor|
-    environment.append_path vendor
-  end
-
-  path = "public/emark.jp/js/application.js"
-  mkdir_p File.dirname(path)
-  File.open path, "w" do |fp|
-    fp.puts environment["application.js"].to_s
-  end
-end
-
 begin
   require 'jasmine'
   load 'jasmine/tasks/jasmine.rake'
@@ -94,7 +107,6 @@ desc "jspec"
 task:jspec do
   sh "bundle exec jasmine-headless-webkit -c"
 end
-
 
 namespace :rspec do
   namespace :publish do
@@ -149,9 +161,7 @@ namespace :rspec do
   end
 end
 
-
-desc "haml"
-task :haml do
+namespace:haml do
   begin
     require "pp"
     require "rb-fsevent"
@@ -161,17 +171,30 @@ task :haml do
     puts "rspec:publish can't load rb-fsevent"
   end
 
-
-  fsevent = FSEvent.new
-  fsevent.watch ["app/assets"] do
-    begin
-      File.open "public/emark.jp/development.html", "w" do |fp|
-        fp.write Haml::Engine.new(File.read("app/assets/dashboard.haml"), :format => :html5).to_html
-        puts "write"
-      end
-    rescue Exception => e
-      pp e.backtrace
+  desc "haml:octopress"
+  task:octopress do
+    octopress = "public/emark.jp/octopress/index.html"
+    File.open octopress, "w" do |fp|
+      fp.write Haml::Engine.new(File.read("app/views/layouts/octopress.haml"), :format => :html5).render
     end
+    puts "write to #{octopress}"
   end
-  fsevent.run
+
+  desc "haml:dashboard"
+  task:dashboard do
+  end
+
+  desc "haml:fsevent"
+  task:fsevent do
+    fsevent = FSEvent.new
+    fsevent.watch ["app"] do
+      begin
+        Rake::Task["haml:octopress"].execute
+      rescue Exception => e
+        pp e.backtrace
+      end
+    end
+    fsevent.run
+  end
 end
+

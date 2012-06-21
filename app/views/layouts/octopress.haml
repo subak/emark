@@ -1,0 +1,34 @@
+!!!
+:plain
+  <!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+  <!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+  <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+
+%head
+  %meta{charset: "utf-8"}
+  %meta{name: "HandheldFriendly", content: "True"}
+  %meta{name: "MobileOptimized",  content: "320"}
+  %meta{name: "viewport",         content: "width=device-width, initial-scale=1"}
+  %link{href: "#{config.octopress_href}/favicon.png",             rel: "icon"}
+  %link{href: "#{config.octopress_href}/stylesheets/screen.css",  rel: "stylesheet", media: "screen, projection"}
+[  %script{src: "#{config.octopress_href}/javascripts/modernizr-2.0.js", defer: true}
+  %script{src: "#{config.octopress_href}/javascripts/ender.js",         defer: true}
+  %script{src: "#{config.octopress_href}/javascripts/octopress.js",     defer: true}
+
+  %title
+  %meta{name: "author",      content: ""}
+  %meta{name: "description", content: ""}
+  %meta{name: "keywords",    content: ""}
+  %link{rel: "canonical", href: ""}
+  %link{href: "", rel: "alternate", title: "", type: "application/atom+xml"}
+
+%body
+  %header{role: "banner"}
+  %nav{role: "navigation"}
+  #main
+    %div
+    %aside{class: "sidebar"}
+  %footer{role: "contentinfo"}
+
+:plain
+  </html>

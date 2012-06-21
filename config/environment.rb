@@ -47,4 +47,4 @@ config.site_hostname =  "#{config.site_host}" + case (p = config.site_port) when
 config.site_href =      "#{config.site_protocol}://#{config.site_hostname}"
 config.admin_hostname = "#{config.admin_host}" + case (p = config.admin_port) when 443,80,nil then "" else ":#{p}" end
 config.admin_href =     "#{config.admin_protocol}://#{config.admin_hostname}"
-
+config.octopress_href = "http://www.cdn-cache.com/20120506/octopress"
