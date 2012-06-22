@@ -13,8 +13,10 @@
       |
       %a{href: "#disqus_thread"} Comments
 - unless @params?.eid
-  .entry-content!= window.markdown.toHTML(@entry.markdown)
-  %footer
-    %a{rel: "full-article", href:"/#{@entry.id}"} Read on &rarr;
+  - md_tree = markdown.toHTMLTree(@entry.markdown)
+  .entry-content!= window.markdown.toHTML(md_tree.slice(0, 4))
+  - if 4 < md_tree.length
+    %footer
+      %a{rel: "full-article", href:"/#{@entry.id}"} Read on &rarr;
 - else
   .entry-content!= window.markdown.toHTML(@entry.markdown)
