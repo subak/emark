@@ -31,18 +31,32 @@ class Entry extends Spine.Model
 
 class Index extends Spine.Controller
   active: (params={})->
-    @params = params
+    @params        = params
+    @next_page     = null
+    @previous_page = null
+    @entries       = []
     @el.empty()
     Entry.one "refresh", @render
 
   render: =>
     @blog = Blog.first()
-    @entries = []
+
+    page  = @params.page || 1
+    page  = parseInt(page, 10)
+    limit = 10
+    from  = (page - 1) * limit
+    to    = from + limit
+    count = Entry.count()
+
+    @next_page     = page + 1 if count >= to + limit
+    @previous_page = page - 1 unless page == 1
 
     i = 0
     for entry in Entry.all()
-      @entries.push entry
-      break if ++i >= 10
+      break if i >= to
+      if i >= from
+        @entries.push entry
+      i += 1
 
     @el = $("#content > div")
     @replace @view("index")(@)
@@ -85,9 +99,14 @@ class Post extends Spine.Controller
     @el = $("#content > div")
     @replace @view("post")(@)
 
+    context =
+      blog:   @blog
+      params: @params
+      date:   @date
+
     entry.unbind "update"
     entry.bind "update", (model)=>
-      $('#' + model.id).replaceWith @include("article")(blog: @blog, entry: model, params:@params, date:@date)
+      $('#' + model.id).replaceWith @include("article")($.extend context, entry: model)
     if entry.markdown?
       entry.trigger "update", entry
     else
@@ -113,49 +132,60 @@ class RecentPosts extends Spine.Controller
 
 class App extends Spine.Controller
   constructor: ->
+    new RecentPosts
     @pages = {
       index:    new Index,
       post:     new Post,
       archives: new Archives
     }
 
-    new RecentPosts root: @
+    @binding()
 
     Blog.one "refresh", @init
     $.when($.ajax("/meta.json"), $.ajax("/index.json"))
     .done (ajax1, ajax2)->
+      # blog
       blog = ajax1[0]
       entries = ajax2[0]
       Blog.refresh blog
 
+      # entry
       pre_entry = null
       for entry in entries
         entry.previous  = pre_entry?.id
         pre_entry?.next = entry.id
         pre_entry = entry
-
       Entry.refresh entries
 
     @routes
-      "/":           ->
+      "/": ->
         @pages.index.active()
-        Entry.trigger "refresh" if Entry.count() != 0
-      "/page/:page": (params)-> @pages.index.active(params)
-      "/archives":   ->
+        @activate()
+      "/page/:page": (params)->
+        @pages.index.active(params)
+        @activate()
+      "/archives": ->
         @pages.archives.active()
-        Entry.trigger "refresh" if Entry.count() != 0
-      "/:eid":       (params)->
+        @activate()
+      "/:eid": (params)->
         @pages.post.active(params)
-        Entry.trigger "refresh" if Entry.exists(params.eid)
-
+        @activate()
     Spine.Route.setup history: true
 
+  binding: ->
+    # binding
     $("body").on "click", "a", (event)=>
       href = $(event.currentTarget).attr("href")
       console.log href
       if href.match(/^(\/|\/page\/\d+|\/archives|\/[0-9a-zA-Z]{4})$/)
         event.preventDefault()
         @navigate href
+
+  activate: ->
+    if Entry.count() != 0
+      Entry.trigger "refresh"
+      $("body").scrollTop $("body > nav").offset().top
+
   init: =>
     blog = Blog.first()
     $header = $('body > header[role="banner"]')
@@ -166,7 +196,6 @@ class App extends Spine.Controller
     else
       $subtitle.remove()
     $('fieldset[role="search"] > input:hidden').val "site:#{blog.bid}"
-
 
 new App
 jQuery.noConflict();
