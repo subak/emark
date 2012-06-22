@@ -30,37 +30,33 @@ class Entry extends Spine.Model
   @configure "Entry", "title", "created", "updated", "previous", "next", "markdown"
 
 class Article extends Spine.Controller
-  constructor: ->
-    super
-    entry = Entry.find(@id)
-    entry.bind "update", @render
-
-    $.ajax("/#{@id}.json")
-    .done (obj)->
-      entry.updateAttribute "markdown", obj.markdown
-
-    @entry = entry
-    @blog  = Blog.first()
+  active: ->
     @deferred = $.Deferred()
+    @entry    = Entry.find(@id)
+    @blog     = Blog.first()
+    @entry.bind "update", @render
+    if @entry.markdown?
+      @entry.trigger "update"
+    else
+      $.ajax("/#{@id}.json")
+      .done (obj)=>
+        @entry.updateAttribute "markdown", obj.markdown
+    @deferred.promise()
   render: =>
     @replace @include("article")(@)
     @deferred.resolve()    
-  rendered: ->
-    @deferred.promise()
+
 
 class Index extends Spine.Controller
   active: (params={})->
     @el.empty()
     @params        = params
-    @next_page     = null
-    @previous_page = null
     @entries       = []
-    @deferred      = $.Deferred()
     Entry.one "refresh", @render
-  renderd: -> @deferred.promise()
+    @deferred = $.Deferred()
+    @deferred.promise()
   render: =>
     @blog = Blog.first()
-
     page  = @params.page || 1
     page  = parseInt(page, 10)
     limit = 10
@@ -68,8 +64,8 @@ class Index extends Spine.Controller
     to    = from + limit
     count = Entry.count()
 
-    @next_page     = page + 1 if count >= to + limit
-    @previous_page = page - 1 unless page == 1
+    @next_page     = if count >= to + limit then page + 1 else null
+    @previous_page = unless page == 1 then page - 1 else null
 
     i = 0
     for entry in Entry.all()
@@ -83,42 +79,27 @@ class Index extends Spine.Controller
 
     promises = []
     for entry in @entries
-      promises.push new Article(id: entry.id, el: $("#eid-#{entry.id}"))
+      promises.push new Article(id: entry.id, el: $("#eid-#{entry.id}")).active()
     $.when(promises).done => @deferred.resolve()
+
 
 class Post extends Spine.Controller
   active: (params={})->
-    @params = params
     @el.empty()
+    @deferred = $.Deferred()
+    @params   = params
     Entry.one "refresh", @render
-    @previous = null
-    @entry    = null
-
+    @deferred.promise()
   render: =>
-    @blog = Blog.first()
-
-    entry = Entry.find(@params.eid)
-    @previous = Entry.find(entry.previous) if Entry.exists(entry.previous)
-    @next     = Entry.find(entry.next) if Entry.exists(entry.next)
+    entry     = Entry.find(@params.eid)
+    @previous = if Entry.exists(entry.previous) then Entry.find(entry.previous)  else null
+    @next     = if Entry.exists(entry.next) then Entry.find(entry.next) else null
     @entry    = entry
-
-    @el = $("#content > div")
+    @blog     = Blog.first()
+    @el       = $("#content > div")
     @replace @view("post")(@)
-
-    context =
-      blog:   @blog
-      params: @params
-      date:   @date
-
-    entry.unbind "update"
-    entry.bind "update", (model)=>
-      $('#' + model.id).replaceWith @include("article")($.extend context, entry: model)
-    if entry.markdown?
-      entry.trigger "update", entry
-    else
-      $.ajax("/#{entry.id}.json")
-      .done (obj)->
-        entry.updateAttribute("markdown", obj.markdown)
+    promise = new Article(id: entry.id, el: $("#eid-#{entry.id}")).active()
+    promise.done => @deferred.resolve()
 
 class Archives extends Spine.Controller
   active: ->
@@ -171,7 +152,7 @@ class App extends Spine.Controller
     # promises.push @pages.index.renderd()
     # $.when(promises)
     # .done ->
-    #   $.getScript "http://www.cdn-cache.com/20120506/octopress/javascripts/octopress.js"
+    #   
 
     @binding()
 
@@ -194,22 +175,21 @@ class App extends Spine.Controller
       Entry.refresh entries
 
     @routes
-      "/": (params)->
-        @pages.index.active()
-        @activate("index")
-      "/page/:page": (params)->
-        @pages.index.active(params)
-        @activate("index")
-      "/archives": (params)->
-        @pages.archives.active()
-        @activate("archives")
-      "/:eid": (params)->
-        @pages.post.active(params)
-        @activate("post")
+      "/": (params)-> @activate("index", params)
+#        @pages.index.active()
+#        @activate("index")
+      "/page/:page": (params)-> @activate("index", params)
+#        @pages.index.active(params)
+#        @activate("index")
+      "/archives": (params)-> @activate("archives", params)
+#        @pages.archives.active()
+#        @activate("archives")
+      "/:eid": (params)-> @activate("post", params)
+#        @pages.post.active(params)
+#        @activate("post")
     Spine.Route.setup history: true
 
   binding: ->
-    # binding
     $("body").on "click", "a", (event)=>
       href = $(event.currentTarget).attr("href")
       console.log href
@@ -217,12 +197,26 @@ class App extends Spine.Controller
         event.preventDefault()
         @navigate href
 
-  activate: (page)->
+  ready: ->
+    $.getScript "http://www.cdn-cache.com/20120506/octopress/javascripts/octopress.js"
+
+  activate: (name, params)->
+    promise = @pages[name].active()
     if Entry.count() != 0
       Entry.trigger "refresh"
       $("body").scrollTop $("body > nav").offset().top
     else
-      @promises.push @pages[page].renderd()
+      @promises.push promise
+      $.when(@promises).done => @ready()
+
+  # activate: (controller, params)->
+  #   promise = controller.active()
+  #   if Entry.count() != 0
+  #     Entry.trigger "refresh"
+  #     $("body").scrollTop $("body > nav").offset().top
+  #   else
+  #     @promises.push promise
+  #     @ready()
 
   init: =>
     blog = Blog.first()
