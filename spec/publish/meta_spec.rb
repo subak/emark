@@ -111,7 +111,7 @@ describe Emark::Publish::Meta do
 
   describe "ファイル生成" do
     it "sitemap.xml" do
-      xml = sitemap @entries
+      xml = sitemap @entries, @blog
       logger.debug xml
       xml.should match %r{<loc>http://#{@bid}}
     end

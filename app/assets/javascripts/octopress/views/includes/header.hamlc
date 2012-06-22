@@ -1,0 +1,5 @@
+%hgroup
+  %h1
+    %a{href: "/"}= @blog.title
+  - unless @blog.subtitle.length == 0
+    %h2= @blog.subtitle

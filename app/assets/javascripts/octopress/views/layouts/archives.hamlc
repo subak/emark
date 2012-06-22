@@ -1,21 +1,20 @@
 %div
   %article{role: "article"}
-    - if @page?.title?
-      %header
-        %h1.entry-title= @page.title
-        - if @page?.date?
-          %p.meta
-            = @include("post/date")
-            = @page.time
+    %header
+      %h1.entry-title
+        Blog Archives
     #blog-archives
       - previous_year = null
-      - for post in @site.posts
-        - year = post.year
+      - for meta_entry in @meta_entries
+        - date = @date(meta_entry.created);
+        - year = date.getFullYear()
         - if year != previous_year
           %h2= year
         %article
           %h1
-            %a{href: post.url}
-              = post.title
-            %time{datetime: post.date, pubdate: true}
-              = post.date
+            %a{href: "/#{meta_entry.id}"}= meta_entry.title
+          %time{datetime: date.toISOString(), pubdate: true}
+            %span.month= date.getMonthName()
+            %span.day=   date.getDate()
+            %span.year=  year
+        - previous_year = year

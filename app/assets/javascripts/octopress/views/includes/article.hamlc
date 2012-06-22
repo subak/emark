@@ -1,0 +1,20 @@
+%header
+  - unless @params.eid
+    %h1.entry-title
+      %a{href: "/#{@entry.id}"}= @entry.title
+  - else
+    %h1.entry-title= @entry.title
+  %p.meta
+    - date = @date(@entry.created)
+    %time{datetime: date.toISOString(), pubdate: true, date-updated: "true"}= "#{date.getMonthName()} #{date.getDate()}"
+      %span th
+      = date.getFullYear()
+    - if @blog?.disqus_short_name?
+      |
+      %a{href: "#disqus_thread"} Comments
+- unless @params.eid
+  .entry-content!= window.markdown.toHTML(@entry.markdown)
+  %footer
+    %a{rel: "full-article", href:"/#{@entry.id}"} Read on &rarr;
+- else
+  .entry-content!= window.markdown.toHTML(@entry.markdown)

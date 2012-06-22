@@ -1,0 +1,10 @@
+.blog-index
+  - for @entry in @entries
+    %article
+      %div{id: @entry.id}
+  .pagenation
+    - if @pagenator?.next_page?
+      %a.prev{href: "/page/#{@pagenator.next_page}"} &larr; Older
+    %a{href: "/archives"} Blog Archives
+    - if @pagenator?.previous_page?
+      %a.next{href: "/page/#{@pagenator.previous_page}"} Newer &rarr;

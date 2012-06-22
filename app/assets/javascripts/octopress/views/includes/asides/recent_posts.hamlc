@@ -1,0 +1,9 @@
+%section
+  %h1
+    Recent Posts
+  %ul#recent_posts
+    - i = 0
+    - for post in @posts
+      %li.post
+        %a{href: "/#{post.id}"}= post.title
+      - break if ++i >= 10

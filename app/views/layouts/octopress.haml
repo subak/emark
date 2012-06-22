@@ -15,6 +15,10 @@
   %script{src: "#{config.octopress_href}/javascripts/ender.js",         defer: true}
   %script{src: "#{config.octopress_href}/javascripts/octopress.js",     defer: true}
 
+  / Fonts from Google''s Web font directory at http://google.com/webfonts
+  %link{href: "http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic", rel: "stylesheet"}
+  %link{href: "http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic",  rel: "stylesheet"}
+
   %title
   %meta{name: "author",      content: ""}
   %meta{name: "description", content: ""}
@@ -24,10 +28,27 @@
 
 %body
   %header{role: "banner"}
+    %hgroup
+      %h1
+        %a{href: "/"}
+      %h2
   %nav{role: "navigation"}
+    %ul.subscription{"data-subscription" => "rss"}
+      %li
+        %a{href: "/atom.xml", rel: "subscribe-rss", title: "subscribe via RSS"} RSS
+    %form{action: "http://google.com/search", method: "get"}
+      %fieldset{role: "search"}
+        %input{name: "q", value: "site:", type:"hidden"}
+        %input.search{name: "q", results: "0", placeholder: "Search", type: "text"}
+    %ul.main-navigation
+      %li
+        %a{href: "/"} Blog
+      %li
+        %a{href: "/archives"} Archives
   #main
-    %div
-    %aside.sidebar
+    #content
+      %div
+      %aside.sidebar
   %footer{role: "contentinfo"}
   %script{src: "#{config.site_href}/octopress.js", defer: true}
 

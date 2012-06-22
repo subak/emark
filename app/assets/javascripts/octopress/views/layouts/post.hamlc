@@ -1,27 +1,25 @@
 %div
   %article.hentry{role: "article"}
-    = @include("article")(@)
+    %div{id: @entry.id}
     %footer
       %p.meta
-        = @include("posts/author")(@)
-        = @include("posts/date")(@)
-        = @include("posts/categories")(@)
+        %span.byline.author.vcard Posted by
+        %span.fn= @blog.author       
+        - date = @date(@entry.created)
+        %time{datetime: date.toISOString(), pubdate: true, date-updated: "true"}= "#{date.getMonthName()} #{date.getDate()}"
+          %span th
+          = date.getFullYear()
       %p.meta
-        - if @page?.previous?.url?
-          %a.basic-alignment.left{href: @page.previous.url, title:"Previous Post: @page.previous.title"}
-            &laquo;
-            = @page.previous.title
-        - if @page?.next?.url?
-          %a.basic-alignment.right{href: @page.next.url, title:"Next Post: @page.next.title"}
-            &raquo;
-            = @page.next.title
+        - if @previous?
+          / &laquo;
+          %a.basic-alignment.left{href: "/#{@previous.id}", title:"Previous Post: #{@previous.title}"}<
+            = "« #{@previous.title}"
+        - if @next?
+          / &raquo;
+          %a.basic-alignment.right{href: "/#{@next.id}", title:"Next Post: #{@next.title}"}<
+            = "#{@next.title} »"
   - if @site?.disqus_short_name? and @page?.comments? == true
     %section
       %h1 Comments
       %div#disqus_thread{aria-live: "polite"}
         = @include("post/disqus_thread")(@)
-  %aside.sidebar
-    - if @site?.post_asides?.size?
-      = "post_asides"
-    - else
-      = "default_asides"

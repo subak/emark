@@ -67,6 +67,28 @@ namespace:assets do
       fsevent.run
     end
   end
+
+  desc "auto"
+  task:auto do
+    require "bundler"
+    Bundler.require :assets
+
+    fsevent = FSEvent.new
+    fsevent.watch ["app/assets/javascripts", "app/views"] do |path|
+      begin
+        if path[0] =~ %r{app/assets/javascripts}
+          Rake::Task["assets:sprockets"].execute
+        end
+
+        if path[0] =~ %r{app/views}
+          Rake::Task["assets:haml:octopress"].execute
+        end
+      rescue Exception => e
+        pp e.backtrace
+      end
+    end
+    fsevent.run
+  end
 end
 
 

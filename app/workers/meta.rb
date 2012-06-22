@@ -92,29 +92,27 @@ module Emark
 
         db.execute select.to_sql do |row|
           entries << {
-            guid:    row[:guid],
+            id:      row[:eid],
             title:   row[:title],
-            created: Time.at(row[:created]/1000).utc.iso8601,
-            updated: Time.at(row[:updated]/1000).utc.iso8601,
-            eid:     row[:eid],
-            bid:     row[:bid]
+            created: row[:created],
+            updated: row[:updated]
           }
         end
 
         entries
       end
 
-      def sitemap entries
+      def sitemap entries, blog
         haml = <<'HAML'
 !!! XML
 %urlset{xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
 - entries.each do |entry|
   %url
-    %loc=     "http://#{entry[:bid]}/#{entry[:eid]}"
-    %lastmod= entry[:created]
+    %loc=     "http://#{blog[:bid]}/#{entry[:id]}"
+    %lastmod= Time.at(entry[:created].to_i/1000).utc.iso8601
 HAML
 
-        Haml::Engine.new(haml).render(self, entries: entries)
+        Haml::Engine.new(haml).render(self, entries: entries, blog: blog)
       end
 
       def atom entries, blog
@@ -137,13 +135,13 @@ HAML
         #{blog[:author]}
   %generator{uri: "http://emark.jp/", version: 0.1} Emark
   - entries.each do |entry|
-    - uri = "http://#{entry[:bid]}/#{entry[:eid]}"
+    - uri = "http://#{blog[:bid]}/#{entry[:id]}"
     %entry
       %title
         :cdata
           #{entry[:title]}
       %link{href: uri}
-      %updated= entry[:updated]
+      %updated= Time.at(entry[:updated].to_i/1000).utc.iso8601
       %id= uri
 HAML
 
@@ -205,7 +203,7 @@ HAML
           blog    = find_blog bid
           entries = find_entries bid
 
-          sitemap_xml = sitemap(entries)
+          sitemap_xml = sitemap(entries, blog)
           atom_xml    = atom(entries, blog)
           index_html  = index_html(entries, blog)
           meta_json   = blog.to_json
