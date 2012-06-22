@@ -1,6 +1,6 @@
 %div
   %article.hentry{role: "article"}
-    %div{id: @entry.id}
+    %div{id: "eid-#{@entry.id}"}
     %footer
       %p.meta
         %span.byline.author.vcard Posted by

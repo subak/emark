@@ -1,8 +1,8 @@
 .blog-index
   - for @entry in @entries
     %article
-      %div{id: @entry.id}
-  .pagenation
+      %div{id: "eid-#{@entry.id}"}
+  .pagination
     - if @next_page?
       %a.prev{href: "/page/#{@next_page}"} &larr; Older
     %a{href: "/archives"} Blog Archives

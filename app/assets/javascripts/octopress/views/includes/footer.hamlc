@@ -1,0 +1,7 @@
+%p
+  Copyright &copy;
+  = new Date().getFullYear()
+  -
+  = @blog.author
+  %span.credit Powered by
+    %a{href: "http://octopress.org"} Octopress

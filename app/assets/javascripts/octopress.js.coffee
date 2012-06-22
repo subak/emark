@@ -29,15 +29,35 @@ class Blog extends Spine.Model
 class Entry extends Spine.Model
   @configure "Entry", "title", "created", "updated", "previous", "next", "markdown"
 
+class Article extends Spine.Controller
+  constructor: ->
+    super
+    entry = Entry.find(@id)
+    entry.bind "update", @render
+
+    $.ajax("/#{@id}.json")
+    .done (obj)->
+      entry.updateAttribute "markdown", obj.markdown
+
+    @entry = entry
+    @blog  = Blog.first()
+    @deferred = $.Deferred()
+  render: =>
+    @replace @include("article")(@)
+    @deferred.resolve()    
+  rendered: ->
+    @deferred.promise()
+
 class Index extends Spine.Controller
   active: (params={})->
+    @el.empty()
     @params        = params
     @next_page     = null
     @previous_page = null
     @entries       = []
-    @el.empty()
+    @deferred      = $.Deferred()
     Entry.one "refresh", @render
-
+  renderd: -> @deferred.promise()
   render: =>
     @blog = Blog.first()
 
@@ -61,24 +81,10 @@ class Index extends Spine.Controller
     @el = $("#content > div")
     @replace @view("index")(@)
 
-    context =
-      blog:   @blog
-      params: @params
-      date:   @date
-
+    promises = []
     for entry in @entries
-      include = @include("article")
-      do (entry)->
-        entry.unbind "update"
-        entry.bind "update", =>
-          $("#" + entry.id).replaceWith include($.extend context, entry: entry)
-        if entry.markdown?
-          entry.trigger "update", entry
-        else
-          $.ajax("/#{entry.id}.json")
-            .done (obj)->
-              entry.updateAttribute "markdown", obj.markdown
-
+      promises.push new Article(id: entry.id, el: $("#eid-#{entry.id}"))
+    $.when(promises).done => @deferred.resolve()
 
 class Post extends Spine.Controller
   active: (params={})->
@@ -123,25 +129,55 @@ class Archives extends Spine.Controller
     @replace @view("archives")(@)
 
 class RecentPosts extends Spine.Controller
-  constructor: ->
-    @el = $("#content > aside.sidebar")
+  active: ->
+    @deferred = $.Deferred()
     Entry.one "refresh", @render
+    @deferred.promise()
   render: =>
     @posts = Entry.all()
-    @html @include("asides/recent_posts")(@)
+    @replace @include("asides/recent_posts")(@)
+    @deferred.resolve()
+
+class AboutMe extends Spine.Controller
+  active: ->
+    @deferred = $.Deferred()
+    Entry.one "refresh", @render
+    @deferred.promise()
+  render: =>
+    @blog = Blog.first()
+    if @blog.about?
+      @replace @include("asides/about")(@)
+    else
+      @release()
+    @deferred.resolve()
 
 class App extends Spine.Controller
   constructor: ->
-    new RecentPosts
+
+    asides = [
+      new AboutMe(el: $("#content > aside.sidebar > section:nth-child(1)")),
+      new RecentPosts(el: $("#content > aside.sidebar > section:nth-child(2)"))
+    ]
+
     @pages = {
       index:    new Index,
       post:     new Post,
       archives: new Archives
     }
 
+    @promises = (aside.active() for aside in asides)
+    console.log @promises
+
+    # promises.push @pages.index.renderd()
+    # $.when(promises)
+    # .done ->
+    #   $.getScript "http://www.cdn-cache.com/20120506/octopress/javascripts/octopress.js"
+
     @binding()
 
+    # init
     Blog.one "refresh", @init
+
     $.when($.ajax("/meta.json"), $.ajax("/index.json"))
     .done (ajax1, ajax2)->
       # blog
@@ -158,18 +194,18 @@ class App extends Spine.Controller
       Entry.refresh entries
 
     @routes
-      "/": ->
+      "/": (params)->
         @pages.index.active()
-        @activate()
+        @activate("index")
       "/page/:page": (params)->
         @pages.index.active(params)
-        @activate()
-      "/archives": ->
+        @activate("index")
+      "/archives": (params)->
         @pages.archives.active()
-        @activate()
+        @activate("archives")
       "/:eid": (params)->
         @pages.post.active(params)
-        @activate()
+        @activate("post")
     Spine.Route.setup history: true
 
   binding: ->
@@ -181,13 +217,16 @@ class App extends Spine.Controller
         event.preventDefault()
         @navigate href
 
-  activate: ->
+  activate: (page)->
     if Entry.count() != 0
       Entry.trigger "refresh"
       $("body").scrollTop $("body > nav").offset().top
+    else
+      @promises.push @pages[page].renderd()
 
   init: =>
     blog = Blog.first()
+
     $header = $('body > header[role="banner"]')
     $header.find("h1 a").html(blog.title)
     $subtitle = $header.find("h2")
@@ -196,6 +235,7 @@ class App extends Spine.Controller
     else
       $subtitle.remove()
     $('fieldset[role="search"] > input:hidden').val "site:#{blog.bid}"
+    $('body > footer[role="contentinfo"]').html @include("footer")(blog: blog)
 
 new App
 jQuery.noConflict();

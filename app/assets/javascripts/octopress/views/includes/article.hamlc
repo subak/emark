@@ -1,5 +1,5 @@
 %header
-  - unless @params.eid
+  - unless @params?.eid
     %h1.entry-title
       %a{href: "/#{@entry.id}"}= @entry.title
   - else
@@ -12,7 +12,7 @@
     - if @blog?.disqus_short_name?
       |
       %a{href: "#disqus_thread"} Comments
-- unless @params.eid
+- unless @params?.eid
   .entry-content!= window.markdown.toHTML(@entry.markdown)
   %footer
     %a{rel: "full-article", href:"/#{@entry.id}"} Read on &rarr;
