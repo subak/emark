@@ -90,45 +90,109 @@ module Emark
       end
     end
 
+    class Reset
+      include Common
+
+      def run limit
+        delete_expired_queue_blog  limit
+        delete_expired_queue_entry limit
+        delete_expired_queue_meta  limit
+      end
+
+      private
+
+      def delete_expired_queue_blog limit
+        update = UpdateManager.new Table.engine
+        update.table db.blog_q
+        update.set([
+                     [db.blog_q[:lock], 0]
+                   ])
+        update.where(db.blog_q[:lock].eq 1)
+        update.where db.blog_q[:queued].lt(Time.now.to_f - limit)
+        sql = update.to_sql
+        db.execute sql
+        logger.info sql if db.changes >= 1
+      end
+
+      def delete_expired_queue_entry limit
+        delete = DeleteManager.new Table.engine
+        delete.from db.entry_q
+        delete.where(db.entry_q[:lock].eq 1)
+        delete.where db.entry_q[:queued].lt(Time.now.to_f - limit)
+        sql = delete.to_sql
+        db.execute sql
+        logger.info sql if db.changes >= 1
+      end
+
+      def delete_expired_queue_meta limit
+        update = UpdateManager.new Table.engine
+        update.table db.meta_q
+        update.set([
+                     [db.meta_q[:lock], 0]
+                   ])
+        update.where(db.meta_q[:lock].eq 1)
+        update.where db.meta_q[:queued].lt(Time.now.to_f - limit)
+        sql = update.to_sql
+        db.execute sql
+        logger.info sql if db.changes >= 1
+      end
+    end
+
     private
     def logger
       Emark::Publish.logger
     end
 
-    def delete_expired_queue_blog limit
-      update = UpdateManager.new Table.engine
-      update.table db.blog_q
-      update.set([
-                   [db.blog_q[:lock], 0]
-                 ])
-      update.where(db.blog_q[:lock].eq 1)
-      update.where db.blog_q[:queued].lt(Time.now.to_f - limit)
-      sql = update.to_sql
-      db.execute sql
-      logger.info sql if db.changes >= 1
+    def sleep time=0
+      fb = Fiber.current
+      EM.add_timer time do
+        fb.resume
+      end
+      Fiber.yield
     end
 
-    def delete_expired_queue_entry limit
-      delete = DeleteManager.new Table.engine
-      delete.from db.entry_q
-      delete.where(db.entry_q[:lock].eq 1)
-      delete.where db.entry_q[:queued].lt(Time.now.to_f - limit)
-      sql = delete.to_sql; logger.info sql
-      db.execute sql
-      logger.info sql if db.changes >= 1
+    def run q, interval, &block
+      q.pop do |obj|
+        df = EM::DefaultDeferrable.new
+        df.callback do |obj|
+          fb = Fiber.current
+          EM.add_timer do
+            fb.resume
+          end
+          Fiber.yield
+
+          q.push obj
+          2.times do
+            run q, interval, &block
+          end
+        end
+
+        Fiber.new do
+          begin
+            block.call obj, df
+          rescue Emark::Publish::Fatal => e
+            logger.warn "#{e}"
+          rescue Exception => e
+            logger.warn e
+          end
+        end.resume
+      end
     end
 
-    def delete_expired_queue_meta limit
-      update = UpdateManager.new Table.engine
-      update.table db.meta_q
-      update.set([
-                   [db.meta_q[:lock], 0]
-                 ])
-      update.where(db.meta_q[:lock].eq 1)
-      update.where db.meta_q[:queued].lt(Time.now.to_f - limit)
-      sql = update.to_sql
-      db.execute sql
-      logger.info sql if db.changes >= 1
+    def queue klass, size, interval=0
+      q = EM::Queue.new
+      size.times { q.push klass.new }
+      block = proc do |obj, df|
+        df.errback do |obj|
+          sleep 1
+          q.push obj
+          if size == q.size
+            run q, interval, &block
+          end
+        end
+        obj.run.! ? df.fail(obj) : df.succeed(obj)
+      end
+      run q, interval, &block
     end
 
     class << self

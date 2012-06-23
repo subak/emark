@@ -8,7 +8,6 @@ module Helper
     include Emark::Publish::Common
 
     def self.db
-#      @instance = (@instance.!.! and @instance.db.closed?.!) ? @instance : self.new
       @instance ||= self.new
       @instance.db
     end

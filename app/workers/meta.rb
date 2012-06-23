@@ -4,8 +4,7 @@ require File.join File.expand_path(__FILE__), "../publish"
 
 module Emark
   module Publish
-    module Meta
-
+    module MetaHelper
       private
 
       def file_dir bid
@@ -183,56 +182,56 @@ HAML
         raise Fatal if db.changes != 1
         true
       end
+    end
 
-      class << self
-        include Emark::Publish
-        include Emark::Publish::Meta
+    class Meta
+      include Common
+      include MetaHelper
 
-        def run
-          res = dequeue
-          case
-          when res[:empty]
-            logger.debug "Meta:empty"
-            return :empty
-          when res[:left]
-            logger.info "Meta:left bid:#{res[:bid]}, count:#{res[:count]}"
-            return :left
-          end
-          bid = res[:bid]
-
-          blog    = find_blog bid
-          entries = find_entries bid
-
-          sitemap_xml = sitemap(entries, blog)
-          atom_xml    = atom(entries, blog)
-          index_html  = index_html(entries, blog)
-          meta_json   = blog.to_json
-          index_json  = entries.to_json
-
-          thread do
-            FileUtils.mkdir_p file_dir(bid)
-            FileUtils.mkdir_p sym_dir(bid)
-
-            save_file bid, "sitemap.xml", sitemap_xml
-            save_file bid, "atom.xml",    atom_xml
-            save_file bid, "index.html",  index_html
-            save_file bid, "meta.json",   meta_json
-            save_file bid, "index.json",  index_json
-
-            ##
-            # templateファイル
-            tpl = File.join config.public, 'emark.jp/octopress/index.html'
-            sym = File.join sym_dir(bid),  "template.html"
-            File.unlink sym if File.symlink? sym
-            File.symlink tpl, sym
-          end
-
-          delete_queue bid
-
-          logger.info "Meta.run bid:#{bid}, count:#{entries.size}"
-
-          true
+      def run
+        res = dequeue
+        case
+        when res[:empty]
+          logger.debug "Meta:empty"
+          return false
+        when res[:left]
+          logger.info "Meta:left bid:#{res[:bid]}, count:#{res[:count]}"
+          return false
         end
+        bid = res[:bid]
+
+        blog    = find_blog bid
+        entries = find_entries bid
+
+        sitemap_xml = sitemap(entries, blog)
+        atom_xml    = atom(entries, blog)
+        index_html  = index_html(entries, blog)
+        meta_json   = blog.to_json
+        index_json  = entries.to_json
+
+        thread do
+          FileUtils.mkdir_p file_dir(bid)
+          FileUtils.mkdir_p sym_dir(bid)
+
+          save_file bid, "sitemap.xml", sitemap_xml
+          save_file bid, "atom.xml",    atom_xml
+          save_file bid, "index.html",  index_html
+          save_file bid, "meta.json",   meta_json
+          save_file bid, "index.json",  index_json
+
+          ##
+          # templateファイル
+          tpl = File.join config.public, 'emark.jp/octopress/index.html'
+          sym = File.join sym_dir(bid),  "template.html"
+          File.unlink sym if File.symlink? sym
+          File.symlink tpl, sym
+        end
+
+        delete_queue bid
+
+        logger.info "Meta.run bid:#{bid}, count:#{entries.size}"
+
+        true
       end
     end
   end

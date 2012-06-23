@@ -294,7 +294,6 @@ HAML
           logger.info "Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
           return :delete
         rescue Recover
-          logger.info "recover"
           recover guid, eid, bid
           delete_queue guid
           logger.info "Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"

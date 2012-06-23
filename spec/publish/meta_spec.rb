@@ -15,7 +15,7 @@ end
 
 describe Emark::Publish::Meta do
   Rspec.configure do
-    include Emark::Publish::Meta
+    include Emark::Publish::MetaHelper
   end
 
   before:all do
@@ -154,6 +154,8 @@ describe Emark::Publish::Meta do
                       ])
         db.execute insert.to_sql
       end
+
+      @meta_q = Emark::Publish::Meta.new
     end
 
     it "throught" do
@@ -165,13 +167,13 @@ describe Emark::Publish::Meta do
       db.execute insert.to_sql
 
       sync do
-        Emark::Publish::Meta.run.should be_true
+        @meta_q.run.should be_true
       end
     end
 
     it "empty" do
       sync do
-        Emark::Publish::Meta.run.should == :empty
+        @meta_q.run.should be_false
       end
     end
 
@@ -192,7 +194,7 @@ describe Emark::Publish::Meta do
       db.execute insert.to_sql
 
       sync do
-        Emark::Publish::Meta.run.should == :left
+        @meta_q.run.should be_false
       end
     end
   end
