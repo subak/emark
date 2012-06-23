@@ -100,7 +100,7 @@ def delete_expired_queue_entry limit
   delete.from db.entry_q
   delete.where(db.entry_q[:lock].eq 1)
   delete.where db.entry_q[:queued].lt(Time.now.to_f - limit)
-  sql = delete.to_sql
+  sql = delete.to_sql; logger.info sql
   db.execute sql
   logger.info sql if db.changes >= 1
 

@@ -39,7 +39,7 @@ else
   config.nginx_conf =     "/Volumes/Data/Users/hiro/Dev/nginx/conf/include/emark.conf"
 #  config.logger_level =   Logger::DEBUG
   config.logger_level =   Logger::INFO
-  config.thread_abort =   false
+  config.thread_abort =   true
   config.cpu_core =       1
 end
 

@@ -16,37 +16,37 @@ def run &block
     # rescue SQLite3::LockedException, SQLite3::BusyException => e
     #   logger.debug "#{e}"
     rescue Emark::Publish::Fatal => e
-      logger.debug "#{e}"
+      logger.warn "#{e}"
     rescue Exception => e
-      logger.debug e
+      logger.warn e
     end
   end.resume
 end
 
-config.cpu_core.times do
-  Thread.new do
-    scope
-    EM.run do
-      EM.add_periodic_timer 0.1 do
-        run do
-          Emark::Publish::Blog.run
-        end
-      end
+# config.cpu_core.times do
+#   Thread.new do
+#     scope
+#     EM.run do
+#       EM.add_periodic_timer 0.1 do
+#         run do
+#           Emark::Publish::Blog.run
+#         end
+#       end
 
-      EM.add_periodic_timer 0.1 do
-        run do
-          Emark::Publish::Entry.run
-        end
-      end
+#       EM.add_periodic_timer 0.1 do
+#         run do
+#           Emark::Publish::Entry.run
+#         end
+#       end
 
-      EM.add_periodic_timer 1 do
-        run do
-          Emark::Publish::Meta.run
-        end
-      end
-    end
-  end
-end
+#       EM.add_periodic_timer 1 do
+#         run do
+#           Emark::Publish::Meta.run
+#         end
+#       end
+#     end
+#   end
+# end
 
 EM.run do
   scope
@@ -60,6 +60,25 @@ EM.run do
       delete_expired_queue_blog  300
       delete_expired_queue_entry 300
       delete_expired_queue_meta  300
+    end
+  end
+
+
+  EM.add_periodic_timer 0.1 do
+    run do
+      Emark::Publish::Blog.run
+    end
+  end
+
+  EM.add_periodic_timer 0.1 do
+    run do
+      Emark::Publish::Entry.run
+    end
+  end
+
+  EM.add_periodic_timer 1 do
+    run do
+      Emark::Publish::Meta.run
     end
   end
 end

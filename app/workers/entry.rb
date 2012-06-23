@@ -151,10 +151,16 @@ module Emark
     = html
 HAML
 
-        html = Haml::Engine.new(haml, format: :html5).
+        content = rDiscount.to_html
+        content = content.encode("UTF-8", "UTF-8",
+                          invalid: :replace,
+                          undef: :replace,
+                          replace: '.')
+
+        Haml::Engine.new(haml, format: :html5).
           to_html(self,
              title: title,
-             html:  rDiscount.to_html)
+             html:  content)
       end
 
 
@@ -215,8 +221,8 @@ HAML
         html = file + ".html"
 
         # errorの可能性
-        File.unlink json
-        File.unlink html
+        File.unlink json if File.symlink? json
+        File.unlink html if File.symlink? html
 
         update = UpdateManager.new Table.engine
         update.table db.sync
@@ -278,18 +284,18 @@ HAML
           bid     = entry[:bid]
           updated = entry[:updated]
           eid     = Subak::Utility.shorten_hash(guid.gsub("-", "")).slice(0, 4)
-          logger.debug guid
-          logger.debug eid
-          logger.info "Entry.run:begin bid:#{bid}, eid:#{eid}, guid:#{guid}"
 
           begin
             detect guid, updated
           rescue Delete
             delete guid, eid, bid
+            delete_queue guid
             logger.info "Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
             return :delete
           rescue Recover
+            logger.info "recover"
             recover guid, eid, bid
+            delete_queue guid
             logger.info "Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
             return :recover
           end

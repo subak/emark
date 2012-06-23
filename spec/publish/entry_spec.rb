@@ -138,8 +138,8 @@ describe Emark::Publish::Entry do
     before:all do
       @note_guid  = Digest::SHA1.new.update("hoge").to_s
       @eid        = Subak::Utility.shorten_hash(@note_guid).slice(0,4)
-      @markdown   = "## hoge"
-      @title      = "hoge"
+      @markdown   = File.read "./spec/publish/fixtures/markdown.md"
+      @title      = File.read "./spec/publish/fixtures/title.txt"
       @created    = Time.now.to_i * 1000
       @updated    = Time.now.to_i * 1000
     end
@@ -157,10 +157,7 @@ describe Emark::Publish::Entry do
 
 
     it "entry_html" do
-      result = entry_html @note_guid, @markdown, @title
-      logger.debug result
-
-      result.should match(/<h2>hoge/)
+      entry_html @note_guid, @markdown, @title
     end
 
 
