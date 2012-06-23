@@ -272,8 +272,8 @@ HAML
     end
 
     class Entry
-      include Emark::Publish
-      include Emark::Publish::EntryHelper
+      include EntryHelper
+      include Common
 
       def run
         entry = dequeue
@@ -292,13 +292,13 @@ HAML
           delete guid, eid, bid
           delete_queue guid
           logger.info "Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
-          return true
+          return :delete
         rescue Recover
           logger.info "recover"
           recover guid, eid, bid
           delete_queue guid
           logger.info "Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
-          return true
+          return :recover
         end
 
         session   = session(bid)

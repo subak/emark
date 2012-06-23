@@ -213,13 +213,8 @@ describe Emark::Publish::Entry do
     it "empty" do
       sync do
         @entry.run.should be_false
-#        Emark::Publish::Entry.run.should == :empty
       end
     end
-
-  end
-end
-__END__
 
     describe "ok" do
       before:all do
@@ -251,7 +246,7 @@ __END__
 
       it "through" do
         sync do
-          Emark::Publish::Entry.run.should be_true
+          @entry.run.should be_true
         end
       end
 
@@ -266,7 +261,7 @@ __END__
         db.execute insert.to_sql
 
         sync do
-          Emark::Publish::Entry.run.should == :delete
+          @entry.run.should == :delete
         end
       end
 
@@ -287,7 +282,7 @@ __END__
         db.execute insert.to_sql
 
         sync do
-          Emark::Publish::Entry.run.should == :recover
+          @entry.run.should == :recover
         end
       end
     end

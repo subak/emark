@@ -55,13 +55,7 @@ def run q, interval, &block
       Fiber.yield
 
       q.push obj
-      run q, interval, &block
-    end
-
-    df.errback do |obj|
-      sleep 1
-      q.push obj
-      if 1 == q.size
+      2.times do
         run q, interval, &block
       end
     end
@@ -78,17 +72,40 @@ def run q, interval, &block
   end
 end
 
+def queue klass, size, interval=0
+  q = EM::Queue.new
+  size.times { q.push klass.new }
+  block = proc do |obj, df|
+    df.errback do |obj|
+      sleep 1
+      q.push obj
+      if size == q.size
+        run q, interval, &block
+      end
+    end
+    obj.run.! ? df.fail(obj) : df.succeed(obj)
+  end
+  run q, interval, &block
+end
 
 EM.run do
-  blog_q = EM::Queue.new
-  1.times do
-    blog_q.push Blog.new
-  end
-  run blog_q, 0.5 do |obj, df|
-    obj.run ? df.succeed(obj) : df.fail(obj)
-  end
+  # blog_q = EM::Queue.new
+  # 1.times do
+  #   blog_q.push Blog.new
+  # end
+  # run blog_q, 0.5 do |obj, df|
+  #   obj.run.! ? df.fail(obj) : df.succeed(obj)
+  # end
 
-  
+  queue Blog, 1
+  queue Entry, 100
+
+
+  # entry_q = EM::Queue.new
+  # 20.times { entry_q.push Entry.new }
+  # run entry_q, 0 do |obj, df|
+  #   obj.run.! ? df.fail(obj) : df.succeed(obj)
+  # end
 
   # 3.times do
   #   run Blog.new do |obj, df|
