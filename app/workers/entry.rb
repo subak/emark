@@ -4,7 +4,7 @@ require File.join File.expand_path(__FILE__), "../publish"
 
 module Emark
   module Publish
-    module Entry
+    module EntryHelper
       class Delete < Exception; end
       class Recover < Exception; end
 
@@ -269,65 +269,65 @@ HAML
 
         true
       end
+    end
 
-      class << self
-        include Emark::Publish
-        include Emark::Publish::Entry
+    class Entry
+      include Emark::Publish
+      include Emark::Publish::EntryHelper
 
-        def run
-          entry = dequeue
-          if entry.!
-            logger.debug "Entry:empty"
-            return :empty
-          end
-          guid    = entry[:note_guid]
-          bid     = entry[:bid]
-          updated = entry[:updated]
-          eid     = Subak::Utility.shorten_hash(guid.gsub("-", "")).slice(0, 4)
-
-          begin
-            detect guid, updated
-          rescue Delete
-            delete guid, eid, bid
-            delete_queue guid
-            logger.info "Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
-            return :delete
-          rescue Recover
-            logger.info "recover"
-            recover guid, eid, bid
-            delete_queue guid
-            logger.info "Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
-            return :recover
-          end
-
-          session   = session(bid)
-          authtoken = session[:authtoken]
-          shard     = session[:shard]
-
-          note    = thread { note guid, authtoken, shard }
-          title   = note.title.force_encoding("UTF-8")
-          created = note.created
-          updated = note.updated
-
-          markdown = markdown(note, shard)
-          json     = entry_json(guid, eid, markdown, title, created, updated)
-          html     = entry_html(guid, markdown, title)
-
-          thread do
-            save_file :markdown, guid, :markdown, markdown
-            json_path = save_file :entry, guid, :json, json
-            html_path = save_file :entry, guid, :html, html
-            save_link bid, eid, :json, json_path
-            save_link bid, eid, :html, html_path
-          end
-
-          update_sync guid, eid, bid, title, created, updated
-          delete_queue guid
-
-          logger.info "Entry.run bid:#{bid}, eid:#{eid}, guid:#{guid}"
-
-          true
+      def run
+        entry = dequeue
+        if entry.!
+          logger.debug "Entry:empty"
+          return false
         end
+        guid    = entry[:note_guid]
+        bid     = entry[:bid]
+        updated = entry[:updated]
+        eid     = Subak::Utility.shorten_hash(guid.gsub("-", "")).slice(0, 4)
+
+        begin
+          detect guid, updated
+        rescue Delete
+          delete guid, eid, bid
+          delete_queue guid
+          logger.info "Entry.delete bid:#{bid}, eid:#{eid}, guid:#{guid}"
+          return true
+        rescue Recover
+          logger.info "recover"
+          recover guid, eid, bid
+          delete_queue guid
+          logger.info "Entry.recover bid:#{bid}, eid:#{eid}, guid:#{guid}"
+          return true
+        end
+
+        session   = session(bid)
+        authtoken = session[:authtoken]
+        shard     = session[:shard]
+
+        note    = thread { note guid, authtoken, shard }
+        title   = note.title.force_encoding("UTF-8")
+        created = note.created
+        updated = note.updated
+
+        markdown = markdown(note, shard)
+        json     = entry_json(guid, eid, markdown, title, created, updated)
+        html     = entry_html(guid, markdown, title)
+
+        thread do
+          save_file :markdown, guid, :markdown, markdown
+          json_path = save_file :entry, guid, :json, json
+          html_path = save_file :entry, guid, :html, html
+          save_link bid, eid, :json, json_path
+          save_link bid, eid, :html, html_path
+        end
+
+        update_sync guid, eid, bid, title, created, updated
+        delete_queue guid
+
+        logger.info "Entry.run bid:#{bid}, eid:#{eid}, guid:#{guid}"
+
+        true
       end
     end
   end

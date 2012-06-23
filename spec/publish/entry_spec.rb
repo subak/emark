@@ -15,7 +15,7 @@ end
 
 describe Emark::Publish::Entry do
   RSpec.configure do
-    include Emark::Publish::Entry
+    include Emark::Publish::EntryHelper
   end
 
   before:all do
@@ -206,11 +206,20 @@ describe Emark::Publish::Entry do
   end
 
   describe "run" do
+    before:all do
+      @entry = Emark::Publish::Entry.new
+    end
+
     it "empty" do
       sync do
-        Emark::Publish::Entry.run.should == :empty
+        @entry.run.should be_false
+#        Emark::Publish::Entry.run.should == :empty
       end
     end
+
+  end
+end
+__END__
 
     describe "ok" do
       before:all do

@@ -229,7 +229,7 @@ describe Emark::Publish::Blog do
     describe "キュー無し" do
       it "Blog.run:empty" do
         sync do
-          @blog.run.should == :empty
+          @blog.run.should be_false
         end
       end
     end
@@ -242,14 +242,12 @@ describe Emark::Publish::Blog do
                         [db.blog_q[:queued], Time.now.to_f]
                       ])
         db.execute insert.to_sql
-        @blog = Emark::Publish::Blog.new
       end
 
       it "ブログ無し" do
         proc do
           sync do
-            Emark::Publish::Blog.new.run
-#            @blog.run
+            @blog.run
           end
         end.should raise_error(Emark::Publish::Fatal)
       end
@@ -263,8 +261,7 @@ describe Emark::Publish::Blog do
         db.execute insert.to_sql
 
         sync do
-          Emark::Publish::Blog.new.run.should be_true
-#          @blog.run.should be_true
+          @blog.run.should be_true
         end
       end
     end

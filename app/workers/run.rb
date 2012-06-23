@@ -36,15 +36,35 @@ def xrun obj, &block
   end.resume
 end
 
-def run q, &block
-  q.pop block do |obj, block|
+def sleep time=0
+  fb = Fiber.current
+  EM.add_timer time do
+    fb.resume
+  end
+  Fiber.yield
+end
+
+def run q, interval, &block
+  q.pop do |obj|
     df = EM::DefaultDeferrable.new
     df.callback do |obj|
+      fb = Fiber.current
+      EM.add_timer do
+        fb.resume
+      end
+      Fiber.yield
+
       q.push obj
-      run q, &block
+      run q, interval, &block
     end
 
-    pp df
+    df.errback do |obj|
+      sleep 1
+      q.push obj
+      if 1 == q.size
+        run q, interval, &block
+      end
+    end
 
     Fiber.new do
       begin
@@ -64,13 +84,11 @@ EM.run do
   1.times do
     blog_q.push Blog.new
   end
-
-  run blog_q do |obj, df|
-    pp obj
-    pp df
-    obj.run
-    df.succeed obj
+  run blog_q, 0.5 do |obj, df|
+    obj.run ? df.succeed(obj) : df.fail(obj)
   end
+
+  
 
   # 3.times do
   #   run Blog.new do |obj, df|

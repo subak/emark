@@ -163,7 +163,7 @@ module Emark
         bid = dequeue
         if bid.!
           logger.debug "Blog.run:empty"
-          return :empty
+          return false
         end
 
         session = session bid
