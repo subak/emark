@@ -53,6 +53,7 @@ class Article extends Spine.Controller
 
 class Index extends Spine.Controller
   active: (params={})->
+    @el = $("#content > div")
     @el.empty()
     @deferred = $.Deferred()
     @params        = params
@@ -78,7 +79,6 @@ class Index extends Spine.Controller
         @entries.push entry
       i += 1
 
-    @el = $("#content > div")
     @replace @view("index")(@)
 
     promises = []
@@ -89,6 +89,7 @@ class Index extends Spine.Controller
 
 class Post extends Spine.Controller
   active: (params={})->
+    @el       = $("#content > div")
     @el.empty()
     @deferred = $.Deferred()
     @params   = params
@@ -100,7 +101,6 @@ class Post extends Spine.Controller
     @next     = if Entry.exists(entry.next) then Entry.find(entry.next) else null
     @entry    = entry
     @blog     = Blog.first()
-    @el       = $("#content > div")
     @replace @view("post")(@)
     promise = new Article(id: entry.id, el: $("#eid-#{entry.id}")).active(@params)
     
@@ -110,13 +110,13 @@ class Post extends Spine.Controller
 
 class Archives extends Spine.Controller
   active: ->
+    @el = $("#content > div")
     @el.empty()
     @deferred = $.Deferred()
     Entry.one "refresh", @render
     @deferred.promise()
   render: =>
     @meta_entries = Entry.all()
-    @el = $("#content > div")
     @replace @view("archives")(@)
     @deferred.resolve()
 
