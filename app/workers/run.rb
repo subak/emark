@@ -7,21 +7,9 @@ require File.join dir, "blog"
 require File.join dir, "entry"
 require File.join dir, "meta"
 
-# def run &block
-#   Fiber.new do
-#     begin
-#       block.call
-#     rescue Emark::Publish::Fatal => e
-#       logger.warn "#{e}"
-#     rescue Exception => e
-#       logger.warn e
-#     end
-#   end.resume
-# end
-
 include Emark::Publish
 
-def run &block
+def xrun obj, &block
   df = EM::DefaultDeferrable.new
   df.callback do
     fb = Fiber.current
@@ -30,7 +18,7 @@ def run &block
     end
     Fiber.yield
 
-    run &block
+    run obj, &block
   end
 
   df.errback do
@@ -39,7 +27,7 @@ def run &block
 
   Fiber.new do
     begin
-      block.call df
+      block.call obj, df
     rescue Emark::Publish::Fatal => e
       logger.warn "#{e}"
     rescue Exception => e
@@ -48,14 +36,48 @@ def run &block
   end.resume
 end
 
+def run q, &block
+  q.pop block do |obj, block|
+    df = EM::DefaultDeferrable.new
+    df.callback do |obj|
+      q.push obj
+      run q, &block
+    end
+
+    pp df
+
+    Fiber.new do
+      begin
+        block.call obj, df
+      rescue Emark::Publish::Fatal => e
+        logger.warn "#{e}"
+      rescue Exception => e
+        logger.warn e
+      end
+    end.resume
+  end
+end
+
 
 EM.run do
-  3.times do
-    run do |df|
-      (Blog.new).run
-      df.succeed
-    end
+  blog_q = EM::Queue.new
+  1.times do
+    blog_q.push Blog.new
   end
+
+  run blog_q do |obj, df|
+    pp obj
+    pp df
+    obj.run
+    df.succeed obj
+  end
+
+  # 3.times do
+  #   run Blog.new do |obj, df|
+  #     obj.run
+  #     df.succeed obj
+  #   end
+  # end
   # run do |df|
   #   fb = Fiber.current
   #   EM.add_timer 0.5 do
