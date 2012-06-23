@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 require "pp"
 
 namespace:assets do
@@ -92,30 +94,48 @@ namespace:assets do
 end
 
 
+namespace:build do
+  desc "config_js"
+  task:config_js do
+    require "erb"
+    require "./config/environment"
 
-__END__
+    path = "app/assets/javascripts/config.js"
+    erb  = ERB.new File.read("./config/config.js.erb")
 
-desc "install"
-task :install do
-  sh "bundle install --path vender/bundle"
+    File.open path, "w" do |fp|
+      fp.write erb.result
+    end
+
+    puts "write to #{path}"
+  end
+
+  desc "nginx"
+  task:nginx do
+    require "erb"
+    require "./config/environment"
+
+    erb = ERB.new File.read("./config/emark.conf.erb")
+    File.open config.nginx_conf, "w" do |f|
+      f.puts erb.result
+    end
+    puts "write to #{config.nginx_conf}"
+  end
 end
+
+desc "build"
+task:build do
+  Rake::Task["build:config_js"].execute
+  Rake::Task["build:nginx"].execute
+end
+
 
 task :default => :spec
-task :spec => :init
 
-desc "init"
-task :init do
+desc "spec"
+task:spec do
   sh "bundle exec rake db:migrate RAILS_ENV=test"
-end
-
-begin
-  require "rspec/core/rake_task"
-  RSpec::Core::RakeTask.new(:spec) do |spec|
-    spec.pattern = "spec/spec.rb"
-    spec.rspec_opts = ["-cfs"]
-  end
-rescue LoadError => e
-  puts "can't load rake_task"
+  sh 'rspec -cfs -P "spec/publish/*_spec.rb"'
 end
 
 begin
@@ -124,30 +144,15 @@ rescue LoadError => e
   puts "gem install standalone_migrations to get db:migrate:* tasks! (Error: #{e})"
 end
 
-desc "nginx"
-task :nginx do
-  require "erb"
-  require "./config/environment"
 
-  erb = ERB.new File.read("./config/emark.conf.erb")
-  File.open config.nginx_conf, "w" do |f|
-    f.puts erb.result
-  end
-  puts "write to #{config.nginx_conf}"
-end
+__END__
 
-desc "config_js"
-task :config_js do
-  require "erb"
-  require "./config/environment"
 
-  path = "app/assets/javascripts/config.js"
 
-  erb = ERB.new File.read("./config/config.js.erb")
-  File.open path, "w" do |fp|
-    fp.puts erb.result
-  end
-  puts "write to #{path}"
+begin
+  require 'tasks/standalone_migrations'
+rescue LoadError => e
+  puts "gem install standalone_migrations to get db:migrate:* tasks! (Error: #{e})"
 end
 
 begin

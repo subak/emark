@@ -23,7 +23,6 @@ group :publish do
 end
 
 group :assets do
-#  gem "rails"
   gem "haml"
   gem "eco"
   gem "ejs"
@@ -43,6 +42,7 @@ group :test do
 end
 
 group :cli do
+  gem "rails"
   gem "standalone_migrations"
   gem "thin"
   gem "watchr"
