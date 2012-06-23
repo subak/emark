@@ -15,7 +15,7 @@ end
 
 describe Emark::Publish::Blog do
   RSpec.configure do
-    include Emark::Publish::Blog
+    include Emark::Publish::BlogHelper
   end
 
   before:all do
@@ -214,7 +214,6 @@ describe Emark::Publish::Blog do
         delete_queue @bid
       end.should raise_error(Emark::Publish::Fatal)
     end
-
   end
 
   describe "Blog.run" do
@@ -224,12 +223,13 @@ describe Emark::Publish::Blog do
       delete_entry_q
       delete_meta_q
       get_session
+      @blog = Emark::Publish::Blog.new
     end
 
     describe "キュー無し" do
       it "Blog.run:empty" do
         sync do
-          Emark::Publish::Blog.run.should == :empty
+          @blog.run.should == :empty
         end
       end
     end
@@ -242,12 +242,14 @@ describe Emark::Publish::Blog do
                         [db.blog_q[:queued], Time.now.to_f]
                       ])
         db.execute insert.to_sql
+        @blog = Emark::Publish::Blog.new
       end
 
       it "ブログ無し" do
         proc do
           sync do
-            Emark::Publish::Blog.run
+            Emark::Publish::Blog.new.run
+#            @blog.run
           end
         end.should raise_error(Emark::Publish::Fatal)
       end
@@ -261,7 +263,8 @@ describe Emark::Publish::Blog do
         db.execute insert.to_sql
 
         sync do
-          Emark::Publish::Blog.run.should be_true
+          Emark::Publish::Blog.new.run.should be_true
+#          @blog.run.should be_true
         end
       end
     end

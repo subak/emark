@@ -244,7 +244,7 @@ class App extends Spine.Controller
     $header = $('body > header[role="banner"]')
     $header.find("h1 a").html(blog.title)
     $subtitle = $header.find("h2")
-    if blog.subtitle.length != 0
+    if blog.subtitle?.length != 0
       $subtitle.html blog.subtitle
     else
       $subtitle.remove()

@@ -273,16 +273,37 @@ put "/blogs/:id" do |id|
 end
 
 
+##
+# ブログを削除
 delete "/blogs/:id" do |id|
-  delete = DeleteManager.new Table.engine
-  delete.from db.blog
-  delete.where(db.blog[:uid].eq @session[:uid])
-  delete.where(db.blog[:id].eq  id)
+  select = db.blog.project(db.blog[:bid])
+  select.where(db.blog[:uid].eq @session[:uid])
+  select.where(db.blog[:id].eq id)
+  bid = db.get_first_value select.to_sql
+  raise Forbidden if bid.!
 
   db.transaction do
+    delete = DeleteManager.new Table.engine
+    delete.from db.blog
+    delete.where(db.blog[:uid].eq @session[:uid])
+    delete.where(db.blog[:id].eq  id)
     db.execute delete.to_sql
     raise Forbidden if (db.changes == 1).!
+
+    # publish.syncに削除済みフラグを付ける
+    update = UpdateManager.new Table.engine
+    update.table db.sync
+    update.set([
+                 [db.sync[:deleted], 1]
+               ])
+    update.where(db.sync[:bid].eq bid)
+    db.execute update.to_sql
   end
+
+  # エイリアスを削除
+  # ディレクトリごと削除
+  path = File.join(config.public_blog, bid.slice(0, 2), bid)
+  FileUtils.remove_entry_secure(path) if File.exist?(path)
 
   sleep 1
   200
@@ -341,36 +362,6 @@ get "/check/bid" do
   check = db.get_first_value select.to_sql
 
   "#{check.!}"
-end
-
-
-# ブログを削除
-delete "/close/:bid" do |bid|
-  delete = DeleteManager.new Table.engine
-  delete.from db.blog
-  delete.where(db.blog[:uid].eq @session[:uid])
-  delete.where(db.blog[:bid].eq bid)
-  db.transaction do
-    db.execute delete.to_sql
-    raise Forbidden if (db.changes >= 1).!
-  end
-
-  # publish.syncに削除済みフラグを付ける
-  update = UpdateManager.new Table.engine
-  update.table db.sync
-  update.set([
-               [db.sync[:deleted], 1]
-             ])
-  update.where(db.sync[:bid].eq bid)
-  db.execute update.to_sql
-
-  # エイリアスを削除
-  # ディレクトリごと削除
-  path = File.join(config.public_blog, bid.slice(0, 2), bid)
-  FileUtils.remove_entry_secure(path) if File.exist?(path)
-
-  sleep 1
-  200
 end
 
 

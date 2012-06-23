@@ -4,7 +4,7 @@ require File.join File.expand_path(__FILE__), "../publish"
 
 module Emark
   module Publish
-    module Blog
+    module BlogHelper
 
       private
 
@@ -153,35 +153,35 @@ module Emark
 
         true
       end
+    end
 
-      class << self
-        include Emark::Publish
-        include Emark::Publish::Blog
+    class Blog
+      include BlogHelper
+      include Common
 
-        def run
-          bid = dequeue
-          if bid.!
-            logger.debug "Blog.run:empty"
-            return :empty
-          end
-
-          session = session bid
-
-          notes = thread do
-            find_notes session[:authtoken], session[:shard], session[:notebook]
-          end
-
-          sync_notes = detect notes, bid
-
-          count = enqueue_entry bid, sync_notes
-          enqueue_meta  bid, sync_notes
-
-          delete_queue bid
-
-          logger.info "Blog.run bid:#{bid}, count:#{count}"
-
-          true
+      def run
+        bid = dequeue
+        if bid.!
+          logger.debug "Blog.run:empty"
+          return :empty
         end
+
+        session = session bid
+
+        notes = thread do
+          find_notes session[:authtoken], session[:shard], session[:notebook]
+        end
+
+        sync_notes = detect notes, bid
+
+        count = enqueue_entry bid, sync_notes
+        enqueue_meta  bid, sync_notes
+
+        delete_queue bid
+
+        logger.info "Blog.run bid:#{bid}, count:#{count}"
+
+        true
       end
     end
   end

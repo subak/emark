@@ -1,79 +1,25 @@
 # -*- coding: utf-8; -*-
 
-# ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
-# include Arel
-# Table.engine = ActiveRecord::Base
-
-# ActiveRecord::Base.establish_connection config.environment
-# db = ActiveRecord::Base.connection.raw_connection
-# db.busy_handler do
-#   fb = Fiber.current
-#   EM.add_timer do
-#     fb.resume true
-#   end
-#   Fiber.yield
-# end
-
-# def db.blog_q
-#   Table.new(:blog_q)
-# end
-
-# def db.entry_q
-#   Table.new(:entry_q)
-# end
-
-# def db.meta_q
-#   Table.new(:meta_q)
-# end
-
-# def db.session
-#   Table.new(:session)
-# end
-
-# def db.blog
-#   Table.new(:blog)
-# end
-
-# def db.sync
-#   Table.new(:sync)
-# end
-
-# logger = Logger.new(STDOUT)
-# logger.level = config.logger_level
-
-# Vars ||= {}
-# Vars[:db]     = db
-# Vars[:logger] = logger
-
-# module Emark
-#   module Publish
-#     class Empty < Exception; end
-#     class Fatal < Exception; end
-
-#     def db
-#       Vars[:db]
-#     end
-
-#     def logger
-#       Vars[:logger]
-#     end
-#   end
-# end
-
-scope
-
-###########
 require "ruby-debug"
 Debugger.start
 
-
 module Helper
+  class Common
+    include Emark::Publish::Common
+
+    def self.db
+#      @instance = (@instance.!.! and @instance.db.closed?.!) ? @instance : self.new
+      @instance ||= self.new
+      @instance.db
+    end
+  end
+
   def db
-    Vars[:db]
+    Helper::Common.db
   end
 
   def logger
-    Vars[:logger]
+    @logger ||= Logger.new(STDOUT){@level = config.logger_level}
   end
 
   def sync &block
@@ -98,6 +44,9 @@ module Helper
   end
 
   def delete_blog
+    pp db.closed?
+
+
     delete = DeleteManager.new Table.engine
     delete.from db.blog
     db.execute delete.to_sql
