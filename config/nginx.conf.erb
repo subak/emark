@@ -108,3 +108,30 @@ server {
     rewrite ^ /template.html last;
   }
 }
+
+<% if "production" == config.environment %>
+
+##
+# evernote画像プロキシ
+server {
+  listen      80;
+  server_name <%= config.cache_host %>;
+
+  location / {
+    proxy_pass        http://www.evernote.com;
+    proxy_set_header  Referer "";
+    expires           max;
+  }
+}
+<% end %>
+
+server {
+  listen      <%= config.cdn_port %>;
+  server_name <%= config.cdn_host %>;
+
+  root <%= "#{config.public}/emark.jp" %>;
+
+  location / {
+    rewrite ^/\d{8}/(.*)$ /$1 break;
+  }
+}

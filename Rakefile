@@ -149,7 +149,7 @@ namespace:build do
     require "erb"
     require "./config/environment"
 
-    erb = ERB.new File.read("./config/emark.conf.erb")
+    erb = ERB.new File.read("./config/nginx.conf.erb")
     File.open config.nginx_conf, "w" do |f|
       f.puts erb.result
     end
