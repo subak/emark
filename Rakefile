@@ -32,6 +32,55 @@ namespace:assets do
     end
   end
 
+
+  def sprockets do targets
+    require "bundler"
+    Bundler.require :assets
+
+    vendors = []
+
+    $:.each do |path|
+      next if path !~ /\/lib$/
+      ["/vendor/assets/javascripts", "/app/assets/javascripts"].each do |suffix|
+        vendor = path.sub /\/lib$/, suffix
+        vendors << vendor if File.exist? vendor
+      end
+    end
+
+    environment = Sprockets::Environment.new
+    vendors.each do |vendor|
+      environment.append_path vendor
+      environment.append_path "app/assets/javascripts"
+      environment.append_path "app/assets/stylesheets"
+    end
+
+    targets.each do |from, to|
+      File.open to, "w" do |fp|
+        fp.write environment[from].to_s
+      end
+      puts "write to #{to}"
+    end
+  end
+
+  namespace:sprockets do
+
+    desc "javascripts"
+    task:javascripts do
+      targets = {
+        "octopress.js.coffee" => "public/emark.jp/octopress/index.js",
+        "dashboard.js.coffee" => "public/emark.jp/dashboard/index.js"
+      }
+    end
+
+    desc "stylesheets"
+    task:stylesheets do
+      targets = {
+        "octopress.css.sass" => "public/emark.jp/octopress/index.css",
+        "dashboard.css.sass" => "public/emark.jp/dashboard/index.css"
+      }
+    end
+  end
+
   desc "sprockets"
   task:sprockets do
     require "bundler"
