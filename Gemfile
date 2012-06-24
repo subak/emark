@@ -27,6 +27,7 @@ end
 
 group :assets do
   gem "haml"
+  gem "sass"
   gem "eco"
   gem "ejs"
   gem "sprockets"

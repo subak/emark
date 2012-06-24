@@ -17,7 +17,7 @@ namespace:assets do
       puts "write to #{to}"
     end
 
-    desc "assets:haml:octopress"
+    desc "octopress"
     task:octopress do
       from = "app/views/layouts/octopress.haml"
       to   = "public/emark.jp/octopress/index.html"
@@ -32,8 +32,7 @@ namespace:assets do
     end
   end
 
-
-  desc "assets:sprockets"
+  desc "sprockets"
   task:sprockets do
     require "bundler"
     Bundler.require :assets
@@ -64,24 +63,6 @@ namespace:assets do
         fp.write environment[from].to_s
       end
       puts "write to #{to}"
-    end
-  end
-
-  namespace:sprockets do
-    desc "assets:sprockets:fsevent"
-    task:fsevent do
-      require "bundler"
-      Bundler.require :assets
-
-      fsevent = FSEvent.new
-      fsevent.watch ["app/assets/javascripts"] do
-        begin
-          Rake::Task["assets:sprockets"].execute
-        rescue Exception => e
-          pp e.backtrace
-        end
-      end
-      fsevent.run
     end
   end
 
@@ -138,7 +119,6 @@ namespace:build do
     puts "write to #{config.nginx_conf}"
   end
 
-
   namespace:minjs do
     def minjs from, to
       sh "java -jar scripts/compiler.jar --js=#{from} --js_output_file=#{to}"
@@ -157,9 +137,19 @@ namespace:build do
 end
 
 desc "build"
+task:build => [
+  "build:config_js",
+  "build:nginx",
+  "assets:haml:octopress",
+  "assets:haml:dashboard",
+  "assets:sprockets"
+]
 task:build do
-  Rake::Task["build:config_js"].execute
-  Rake::Task["build:nginx"].execute
+  require "./config/environment"
+  if "production" == config.environment
+    Rake::Task["build::minjs::dashboard"]
+    Rake::Task["build::minjs::octopress"]
+  end
 end
 
 
