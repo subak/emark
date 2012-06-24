@@ -4,17 +4,31 @@ require "pp"
 
 namespace:assets do
   namespace:haml do
-    desc "assets:haml:octopress"
-    task:octopress do
+    def haml from, to
       require "bundler"
       Bundler.require :assets
       require "./config/environment"
 
-      octopress = "public/emark.jp/octopress/index.html"
-      File.open octopress, "w" do |fp|
-        fp.write Haml::Engine.new(File.read("app/views/layouts/octopress.haml"), :format => :html5).render
+      FileUtils.mkdir_p File.dirname(to)
+
+      File.open to, "w" do |fp|
+        fp.write Haml::Engine.new(File.read(from), :format => :html5).render
       end
-      puts "write to #{octopress}"
+      puts "write to #{to}"
+    end
+
+    desc "assets:haml:octopress"
+    task:octopress do
+      from = "app/views/layouts/octopress.haml"
+      to   = "public/emark.jp/octopress/index.html"
+      haml from, to
+    end
+
+    desc "dashboard"
+    task:dashboard do
+      from = "app/views/layouts/dashboard.haml"
+      to   = "public/emark.jp/dashboard/index.html"
+      haml from, to
     end
   end
 
@@ -84,6 +98,7 @@ namespace:assets do
 
         if path[0] =~ %r{app/views}
           Rake::Task["assets:haml:octopress"].execute
+          Rake::Task["assets:haml:dashboard"].execute
         end
       rescue Exception => e
         pp e.backtrace

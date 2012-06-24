@@ -15,3 +15,8 @@
 /public/_
 /public/emark.jp/octopress/index.html
 /public/emark.jp/octopress/index.js
+/public/emark.jp/octopress/index.min.js
+
+/public/emark.jp/dashboard/index.html
+/public/emark.jp/dashboard/index.js
+/public/emark.jp/dashboard/index.min.js
