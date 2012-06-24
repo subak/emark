@@ -49,6 +49,8 @@ namespace:assets do
       environment.append_path "app/assets/stylesheets"
     end
 
+    require "./config/environment"
+
     targets.each do |from, to|
       File.open to, "w" do |fp|
         fp.write environment[from].to_s
@@ -65,7 +67,7 @@ namespace:assets do
       },
       "dashboard" => {
         "dashboard.js.coffee" => "public/emark.jp/dashboard/index.js"
-      }
+      },
     },
     "stylesheets" => {
       "octopress" => {
@@ -104,7 +106,7 @@ namespace:assets do
   end
   task:sprockets do
     tasks.each do |task|
-      name = "assets:sprockets:#{task}"
+      name = "assets:#{task}"
       Rake::Task[name].execute
     end
   end
@@ -142,21 +144,6 @@ task:assets => ["assets:haml", "assets:sprockets"]
 
 
 namespace:build do
-  desc "config_js"
-  task:config_js do
-    require "erb"
-    require "./config/environment"
-
-    path = "app/assets/javascripts/config.js"
-    erb  = ERB.new File.read("./config/config.js.erb")
-
-    File.open path, "w" do |fp|
-      fp.write erb.result
-    end
-
-    puts "write to #{path}"
-  end
-
   desc "nginx"
   task:nginx do
     require "erb"
@@ -187,7 +174,6 @@ namespace:build do
 end
 desc "build"
 task:build => [
-  "build:config_js",
   "build:nginx",
   "assets"
 ]

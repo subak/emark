@@ -7,7 +7,7 @@
 #= require spine/ajax
 #= require spine/route
 #= require_tree ./octopress
-#= require ./config.js
+#= require ./config
 #= require_self
 
 $ = jQuery
