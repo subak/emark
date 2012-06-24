@@ -137,6 +137,23 @@ namespace:build do
     end
     puts "write to #{config.nginx_conf}"
   end
+
+
+  namespace:minjs do
+    def minjs from, to
+      sh "java -jar scripts/compiler.jar --js=#{from} --js_output_file=#{to}"
+    end
+
+    desc "dashboard"
+    task:dashboard do
+      minjs "public/emark.jp/dashboard/index.js", "public/emark.jp/dashboard/index.min.js"
+    end
+
+    desc "octopress"
+    task:octopress do
+      minjs "public/emark.jp/octopress/index.js", "public/emark.jp/octopress/index.min.js"
+    end
+  end
 end
 
 desc "build"
