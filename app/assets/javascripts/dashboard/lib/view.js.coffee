@@ -1,3 +1,3 @@
 Spine.Controller.include
   view: (name) ->
-    JST["app/views/#{name}"]
+    JST["dashboard/views/#{name}"]

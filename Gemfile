@@ -22,15 +22,19 @@ group :publish do
   gem "rdiscount"
 end
 
+group :rails do
+end
+
 group :assets do
   gem "haml"
   gem "eco"
   gem "ejs"
   gem "sprockets"
-  gem "spine-rails", :require => false
-  gem "jquery-rails", :require => false
   gem "haml_coffee_assets"
   gem "rb-fsevent"
+  gem "rails",        :require => false
+  gem "spine-rails",  :require => false
+  gem "jquery-rails", :require => false
 end
 
 group :test do

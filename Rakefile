@@ -32,6 +32,7 @@ namespace:assets do
     end
   end
 
+
   desc "assets:sprockets"
   task:sprockets do
     require "bundler"
@@ -53,17 +54,17 @@ namespace:assets do
       environment.append_path "app/assets/javascripts"
     end
 
-    ##
-    # octopress
-    content   = environment["octopress.js.coffee"].to_s
-    octopress = "public/emark.jp/octopress/index.js"
-    File.open octopress, "w" do |fp|
-      fp.write content
-    end
-    puts "write to #{octopress}"
+    targets = {
+      "octopress.js.coffee" => "public/emark.jp/octopress/index.js",
+      "dashboard.js.coffee" => "public/emark.jp/dashboard/index.js"
+    }
 
-    ##
-    # dashboard
+    targets.each do |from, to|
+      File.open to, "w" do |fp|
+        fp.write environment[from].to_s
+      end
+      puts "write to #{to}"
+    end
   end
 
   namespace:sprockets do
