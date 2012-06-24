@@ -8,11 +8,7 @@
     %meta{name: "author",      content: ""}
     %link{href: "/bootstrap/2.0.3/css/bootstrap.min.css",            rel: "stylesheet"}
     %link{href: "/bootstrap/2.0.3/css/bootstrap-responsive.min.css", rel: "stylesheet"}
-    %style
-      :sass
-        body
-          padding-top: 60px
-    %script{src: "/dashboard/index.js"}
+    %link{href: "/dashboard/index.css",                              rel: "stylesheet"}
   %body
     .navbar.navbar-fixed-top
       .navbar-inner
@@ -31,8 +27,7 @@
             %ul.nav.pull-right
               %li
                 %a{href: "/logout"} ログアウト
-    #app
-    :javascript
-      new App()
-
-
+    - if "production" == config.environment
+      %script{src: "/dashboard/index.min.js"}
+    - else
+      %script{src: "/dashboard/index.js"}

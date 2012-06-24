@@ -3,12 +3,13 @@
 require "pp"
 
 namespace:assets do
-  namespace:haml do
-    def haml from, to
-      require "bundler"
-      Bundler.require :assets
-      require "./config/environment"
+  def haml targets
+    require "bundler"
+    require "sass/plugin"
+    Bundler.require :assets
+    require "./config/environment"
 
+    targets.each do |from, to|
       FileUtils.mkdir_p File.dirname(to)
 
       File.open to, "w" do |fp|
@@ -16,24 +17,18 @@ namespace:assets do
       end
       puts "write to #{to}"
     end
-
-    desc "octopress"
-    task:octopress do
-      from = "app/views/layouts/octopress.haml"
-      to   = "public/emark.jp/octopress/index.html"
-      haml from, to
-    end
-
-    desc "dashboard"
-    task:dashboard do
-      from = "app/views/layouts/dashboard.haml"
-      to   = "public/emark.jp/dashboard/index.html"
-      haml from, to
-    end
   end
 
+  desc "haml"
+  task:haml do
+    targets = {
+      "app/views/layouts/octopress.haml" => "public/emark.jp/octopress/index.html",
+      "app/views/layouts/dashboard.haml" => "public/emark.jp/dashboard/index.html"
+    }
+    haml targets
+  end
 
-  def sprockets do targets
+  def sprockets targets
     require "bundler"
     Bundler.require :assets
 
@@ -62,82 +57,88 @@ namespace:assets do
     end
   end
 
-  namespace:sprockets do
 
-    desc "javascripts"
-    task:javascripts do
-      targets = {
-        "octopress.js.coffee" => "public/emark.jp/octopress/index.js",
+  sprockets = {
+    "javascripts" => {
+      "octopress" => {
+        "octopress.js.coffee" => "public/emark.jp/octopress/index.js"
+      },
+      "dashboard" => {
         "dashboard.js.coffee" => "public/emark.jp/dashboard/index.js"
       }
-    end
-
-    desc "stylesheets"
-    task:stylesheets do
-      targets = {
-        "octopress.css.sass" => "public/emark.jp/octopress/index.css",
+    },
+    "stylesheets" => {
+      "octopress" => {
+        "octopress.css.sass" => "public/emark.jp/octopress/index.css"
+      },
+      "dashboard" => {
         "dashboard.css.sass" => "public/emark.jp/dashboard/index.css"
       }
-    end
-  end
-
-  desc "sprockets"
-  task:sprockets do
-    require "bundler"
-    Bundler.require :assets
-
-    vendors = []
-
-    $:.each do |path|
-      next if path !~ /\/lib$/
-      ["/vendor/assets/javascripts", "/app/assets/javascripts"].each do |suffix|
-        vendor = path.sub /\/lib$/, suffix
-        vendors << vendor if File.exist? vendor
-      end
-    end
-
-    environment = Sprockets::Environment.new
-    vendors.each do |vendor|
-      environment.append_path vendor
-      environment.append_path "app/assets/javascripts"
-    end
-
-    targets = {
-      "octopress.js.coffee" => "public/emark.jp/octopress/index.js",
-      "dashboard.js.coffee" => "public/emark.jp/dashboard/index.js"
     }
-
-    targets.each do |from, to|
-      File.open to, "w" do |fp|
-        fp.write environment[from].to_s
+  }
+  namespace:sprockets do
+    sprockets.each do |key, value|
+      namespace key do
+        value.each do |key, value|
+          desc key
+          task key do
+            sprockets value
+          end
+        end
       end
-      puts "write to #{to}"
+      desc key
+      tasks = value.keys.map do |name|
+        "#{key}:#{name}"
+      end
+      task key do
+        tasks.each do |task|
+          name = "assets:sprockets:#{task}"
+          Rake::Task[name].execute
+        end
+      end
+    end
+  end
+  desc "sprockets"
+  tasks = sprockets.keys.map do |name|
+    "sprockets:#{name}"
+  end
+  task:sprockets do
+    tasks.each do |task|
+      name = "assets:sprockets:#{task}"
+      Rake::Task[name].execute
     end
   end
 
-  desc "auto"
-  task:auto do
+
+  desc "watch"
+  task:watch do
     require "bundler"
+    require "sass/plugin"
     Bundler.require :assets
 
     fsevent = FSEvent.new
-    fsevent.watch ["app/assets/javascripts", "app/views"] do |path|
+    fsevent.watch ["app/assets/javascripts", "app/assets/stylesheets", "app/views"] do |path|
       begin
         if path[0] =~ %r{app/assets/javascripts}
-          Rake::Task["assets:sprockets"].execute
+          Rake::Task["assets:sprockets:javascripts"].execute
+        end
+
+        if path[0] =~ %r{app/assets/stylesheets}
+          Rake::Task["assets:sprockets:stylesheets"].execute
         end
 
         if path[0] =~ %r{app/views}
-          Rake::Task["assets:haml:octopress"].execute
-          Rake::Task["assets:haml:dashboard"].execute
+          Rake::Task["assets:haml"].execute
         end
       rescue Exception => e
-        pp e.backtrace
+        pp e
       end
     end
     fsevent.run
   end
 end
+desc "assets"
+task:assets => ["assets:haml", "assets:sprockets"]
 
 
 namespace:build do
@@ -184,14 +185,11 @@ namespace:build do
     end
   end
 end
-
 desc "build"
 task:build => [
   "build:config_js",
   "build:nginx",
-  "assets:haml:octopress",
-  "assets:haml:dashboard",
-  "assets:sprockets"
+  "assets"
 ]
 task:build do
   require "./config/environment"

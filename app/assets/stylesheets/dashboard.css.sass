@@ -1,7 +1,38 @@
+body
+  padding-top: 60px
+
 .blog-table
-	height: 250px
-	width:  100%
-	tr:nth-child(1) td
-		vertical-align: top;
-	tr:nth-child(2) td
-		vertical-align: top;
+  height: 250px
+  width:  100%
+  tr:nth-child(1) td
+    vertical-align: top
+  tr:nth-child(2) td
+    vertical-align: top
+  tr:nth-child(3) td
+    vertical-align: bottom
+.edit-success a, .edit-danger a
+  display: block
+
+@mixin overlay
+  left:     0px
+  top:      0px
+  position: fixed
+  width:    100%
+  height:   100%
+
+#error
+  @include    overlay
+  color:      white
+  z-index:    1052
+  background:
+    color:    blue
+  display:    none
+
+#loading
+  @include     overlay
+  z-index:     1051
+  background:
+    color:     white
+    image:     url(img/103.gif)
+    repeat:    no-repeat
+    position:  center center

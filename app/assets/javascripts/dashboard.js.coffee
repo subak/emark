@@ -73,4 +73,5 @@ class App extends Spine.Controller
     @pages.loading.trigger "show"
     @navigate "/logout"
 
-window.App = App
+new App()
+
