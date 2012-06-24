@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Everblog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="http://www.cdn-cache.com/20120506/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="http://www.cdn-cache.com/20120506/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+
+    <style>
+      .modal {
+        display:none;
+      }
+      .modal form {
+        margin: 0px;
+      }
+    </style>
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="${site_href}">Everblog</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li><a href="${site_href}#howtouse">使い方</a></li>
+              <!-- <li><a href="#contact">お問い合わせ</a></li> -->
+            </ul>
+            <ul class="nav pull-right">
+              <li><a href="/logout">ログアウト</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="index-container">
+      <div class="row">
+        <div class="span4 blogs" data-tpl-block="blogs">
+          <section class="well">
+            <table style="height:250px;width:100%;">
+              <tbody>
+                <tr>
+                  <td style="vertical-align:top;">
+                    <h3><a href="http://${blogid}/" target="_blank">${title}</a></h3>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="vertical-align:top;">
+                    <p>${subtitle}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="vertical-align:bottom;">
+                    <p class="edit-success"><a href="/sync/${blogid}" data-state="push" class="btn btn-warning" style="display:block;"><i class="icon-refresh icon-white"></i> 同期</a></p>
+                    <p class="edit-success"><a href="/config/${blogid}" data-state="push" class="btn btn-info config" style="display:block;"><i class="icon-cog icon-white"></i> 設定</a></p>
+                    <p class="edit-danger"><a href="/close/${blogid}" data-state="replace" class="btn btn-danger" style="display:block;" data-msg="削除したデータは元に戻せません。よろしいですか？"><i class="icon-trash icon-white"></i> 削除</a></p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div class="span4">
+          <section class="well">
+            <table height="250px" width="100%">
+              <thead>
+                <tr>
+                  <td>
+                    <ul class="nav nav-tabs nav-stacked" style="background-color:white;">
+                      <li>
+                        <a href="http://hb.afl.rakuten.co.jp/hgc/0f77f894.0636ec06.0f77f895.19b8d4eb/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fgetplus%2f2245017%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fgetplus%2fi%2f11557540%2f" target="_blank">EVERNOTE プレミアムパック 1年版</a>
+                      </li>
+                      <li>
+                        <a href="http://hb.afl.rakuten.co.jp/hgc/0f77f9ea.f60ea7f6.0f77f9eb.07d0d7d9/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fsrcc%2fa1201e%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fsrcc%2fi%2f10000015%2f" target="_blank">保存するメモ帳 abrAsus Evernote バンドル版</a>
+                      </li>
+                      <li>
+                        <a href="http://hb.afl.rakuten.co.jp/hgc/0f77fa6e.7809d1ac.0f77fa6f.346e2d8c/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fbook%2f6588405%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fbook%2fi%2f13773205%2f" target="_blank">EVERNOTE「超」仕事術</a>
+                      </li>
+                    </ul>
+                  </td>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="vertical-align:bottom;">
+                    <p id="open-blog"><a href="/open" class="btn btn-primary btn-large" style="display:block;" data-state="push"><i class="icon-pencil icon-white"></i> ブログを公開する</a></p>
+                    <p id="edit-blogs" class="hidden">
+                      <button class="btn btn-danger" style="width:100%;"><i class="icon-wrench icon-white"></i> 編集</button>
+                      <button class="btn btn-success btn-large" style="width:100%;"><i class="icon-ok icon-white"></i> 完了</button>
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+    </div><!-- /container -->
+
+    <div class="modal fade" id="sync">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">x</a>
+        <h3>同期</h3>
+      </div>
+      <div class="modal-body">
+        <p class="alert" data-tpl-remove-if="${queued}" data-tpl-remove-not-equal="false">同期はすでにスケジューリングされています。更新が反映されるまでしばらくお待ち下さい。</p>
+        <p class="alert alert-info" data-tpl-remove-if="${queued}" data-tpl-remove-not-equal="true">同期がスケジューリングされました。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+
+    <div class="modal fade" id="publish-container">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">x</a>
+        <h3>ブログを公開する</h3>
+      </div>
+
+      <div class="modal-body" data-tpl-remove-if-id="notebooks" data-tpl-remove-id-exist>
+        <p class="alert">ブログとして公開できる<strong>ノートブックがありません</strong>。ノートブックを「<a href="${config:site_href}#howtouse">世界中と共有</a>」する必要があります。</p>
+        <p>次のノートブックは「共有」されていないか、またはすでに他のブログで公開されているため<strong>使用できません</strong>。</p>
+        <ul>
+          <li data-tpl-block="notebooks">${notebookName}</li>
+        </ul>
+      </div>
+      <div class="modal-footer" data-tpl-remove-if-id="notebooks" data-tpl-remove-id-exist>
+        <button class="btn" data-dismiss="modal">閉じる</button>
+      </div>
+
+      <form class="form-horizontal" id="blog-form" data-tpl-remove-if-id="notebooks" data-tpl-remove-id-not-exist>
+        <div class="modal-body">
+          <fieldset>
+            <div class="control-group">
+              <label class="control-label">ノートブック</label>
+              <div class="controls">
+                <select name="notebookGuid">
+                  <option value="${notebookGuid}" data-tpl-block="notebooks" data-tpl-remove-if="${available}" data-tpl-remove-empty data-tpl-id="notebooks">${notebookName}</option>
+                </select>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="input-subdomain">公開 URL</label>
+
+              <div class="controls">
+                <div class="input-prepend input-append">
+                  <span class="add-on">http://</span><input class="input-medium" id="input-subdomain" type="text" name="subdomain" placeholder="サブドメイン"><span class="add-on">.${config:site_host}/</span>
+                  <input type="hidden" name="domain" value="${config:site_host}">
+                </div>
+
+                <p class="help-block hidden" id="msg-domain-invalid">
+                  URLの形式が無効です。
+                  URLに<strong>利用可能な文字は [0-9a-z.-] </strong>です。
+                  <strong>最初と最後に [.-] </strong>を使用することは出来ません。
+                  <strong>[.-] は続けて</strong>使用することが出来ません。
+                </p>
+                <p class="help-block hidden" id="msg-domain-double">
+                  URLは既に使用されています。
+                </p>
+                <p class="help-block hidden" id="msg-domain-empty">
+                  URLが入力されていません。
+                </p>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn" data-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary" data-msg-confirm="ノートブックとブログのURLは一度公開すると変更できません。
+入力した内容で公開してよろしいですか？">ブログを公開する</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal fade" id="config-modal">
+      <form id="config-form" class="form-horizontal" action="/config/${blogid}" method="PUT">
+        <div class="modal-header">
+          <a class="close" data-dismiss="modal">x</a>
+          <h3>設定</h3>
+        </div>
+
+        <div class="modal-body">
+          <div class="tabbable">
+            <ul class="nav nav-tabs">
+              <li class="active"><a href="#config-basic" data-toggle="tab">基本情報</a></li>
+              <li><a href="#config-webservice">Webサービス</a></li>
+              <li><a href="#config-behavior">動作</a></li>
+            </ul>
+
+            <div class="tab-content">
+              <div class="tab-pane active" id="config-basic">
+                <div class="control-group">
+                  <label class="control-label" for="input_title">タイトル</label>
+                  <div class="controls">
+                    <input type="text" class="input-xlarge" name="title" id="input_title" value="${title}">
+                  </div>
+                </div>
+
+                <div class="control-group">
+                  <label class="control-label" for="input_text_subtitle">サブタイトル</label>
+                  <div class="controls">
+                    <textarea name="subtitle" class="input-xlarge" id="input_subtitle" rows="3">${subtitle}</textarea>
+                  </div>
+                </div>
+
+                <div class="control-group">
+                  <label class="control-label" for="input_author">投稿者名</label>
+                  <div class="controls">
+                    <input name="author" value="${author}" type="text" class="input-large" id="input-author">
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="config-webservice">
+                <div class="control-group">
+                  <label class="control-label" for="input_text_twitter">Twitter</label>
+                  <div class="controls">
+                    <input type="text" class="input-medium" id="inpute_text_twitter" name="twitter" value="${twitter}">
+                    <!-- <p class="help-block">サイドバーにタイムラインを表示します。</p> -->
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="input_disqus">DISQUS</label>
+                  <div class="controls">
+                    <input name="disqus" value="${disqus}" type="text" class="input-medium" id="input_disqus">
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="config-behavior">
+                <div class="control-group">
+                  <label class="control-label" for="input_num_of_recent">最新のエントリー数</label>
+                  <div class="controls">
+                    <select name="num_of_recent" id="input_num_of_recent" data-min="3" data-max="10" data-value="${num_of_recent}" data-range></select>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label" for="input_num_of_index">インデックスのエントリー数</label>
+                  <div class="controls">
+                    <select name="num_of_index" id="input_num_of_index" data-min="3" data-max="10" data-value="${num_of_index}" data-range></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- END body -->
+
+        <div class="modal-footer">
+          <button class="btn" data-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary">変更を保存</button>
+        </div>
+      </form>
+    </div>
+    
+    <style>
+      #loading {
+        left: 0px;
+        top: 0px;
+        position: fixed;
+        width:  100%;
+        height: 100%;
+        background-color:white;
+        /*opacity:0.7;*/
+        /*z-index:9999;*/
+        z-index:1051;
+        background-image:url(/img/103.gif);
+        background-repeat:no-repeat;
+        background-position:center center;
+      }
+
+      #error {
+        left: 0px;
+        top: 0px;
+        position: fixed;
+        width:  100%;
+        height: 100%;
+        color:white;
+        z-index:1052;
+        background-color:blue;
+        display:none;
+      }
+    </style>
+
+    <div id="loading">
+      <noscript>
+        お使いのブラウザではこのサービスをご利用いただけません。
+      </noscript>
+    </div>
+
+    <div id="error">
+      <table border="0" height="100%" width="100%">
+        <tr><td align="center"><p>エラーが発生しました。処理を続けることができません。</p></td></tr>
+      </table>
+    </div>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script>
+    <script src="http://www.cdn-cache.com/20120506/js/jquery.cookie.js"></script>  
+    <script src="http://www.cdn-cache.com/20120506/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/js/lib/subak/template.js"></script>
+    <script src="/js/lib/domino.js"></script>
+    <script src="/js/dashboard.js"></script>
+  </body>
+</html>

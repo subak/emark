@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Emark | メモがブログになる 20倍高速でアウトプット</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="http://www.cdn-cache.com/20120506/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <!-- <style> -->
+    <!--   body { -->
+    <!--     padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */ -->
+    <!--   } -->
+
+    <!--   section { -->
+    <!--     padding-top: 60px; -->
+    <!--   } -->
+
+    <!--   footer { -->
+    <!--     padding-top: 60px; -->
+    <!--   } -->
+    <!-- </style> -->
+    <link href="http://www.cdn-cache.com/20120506/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600" rel="stylesheet">
+    <link href="/reboot-landing/css/font-awesome.css" rel="stylesheet">
+
+    <link href="/reboot-landing/css/reboot-landing.css" rel="stylesheet">
+    <link href="/reboot-landing/css/reboot-landing-responsive.css" rel="stylesheet">
+    <link href="/reboot-landing/css/themes/green/theme.css" rel="stylesheet">
+
+    <link href="/reboot-landing/css/pages/homepage.css" rel="stylesheet">
+
+    <link href="/reboot-landing/css/pages/faq.css" rel="stylesheet">
+
+    <link href="/reboot-landing/js/lightbox/themes/default/jquery.lightbox.css" rel="stylesheet">
+
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="${site_href}">EMARK</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <!-- <li><a href="#contact">お問い合わせ</a></li> -->
+            </ul>
+            <ul class="nav pull-right">
+              <li><a href="/">Home</a></li>
+              <li><a href="/howtouse">使い方</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="${admin_href}">ログイン</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div id="landing" data-tpl-remove-if="${pathname}" data-tpl-remove-not-equal="/">
+      <div class="inner">
+        <div class="container">
+          <div class="row">
+            <div class="span4 landing-text">
+              <h1>ブログを20倍高速に</h1>
+              <p><strong>Emark</strong>はEvernoteと連携してブログを公開できるWebサービスです。
+              Markdown形式に対応。ドラッグ&amp;ドロップで画像の埋め込みもできるのでかんたんにきれいにアウトプットできます。
+              Evernoteのアカウントがあれば登録不要。すぐにブログが公開できます。</p>
+              <p class="landing-actions">
+                <a class="btn btn-large btn-inverse">今すぐ使う</a>
+              </p>
+            </div>
+            <div class="span8 landing-screenshot">
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="content" data-tpl-remove-if="${pathname}" data-tpl-remove-not-equal="/">
+      <div class="inner">
+        <div class="container">
+          <div class="row">
+            <div class="span8">
+              <h3><span class="slash">//</span>Emarkを使う理由</h3>
+              <ul class="features-list">
+                <li class="feature">
+                  <div class="feature-thumbnail">
+                    <div class="circle-icon">
+                      <div>
+                        <i class="icon-list-alt"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="feature-content">
+                    <h3>メモがブログになる</h3>
+                    <p>レンタルブログのような複雑な操作は必要ありません。普段使っているEVERNOTEクライアントでいつものように新規ノートを書くだけ。</p>
+                  </div>
+                </li>
+                <li class="feature">
+                  <div class="feature-thumbnail">
+                    <div class="circle-icon">
+                      <div>
+                        <i class="icon-list-alt"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="feature-content">
+                    <h3>ノートを書くだけ</h3>
+                    <p>レンタルブログのような複雑な操作は必要ありません。普段使っているEVERNOTEクライアントでいつものように新規ノートを書くだけ。</p>
+                  </div>
+                </li>
+                <li class="feature">
+                  <div class="feature-thumbnail">
+                    <div class="circle-icon">
+                      <div>
+                        <i class="icon-list-alt"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="feature-content">
+                    <h3>画像を表示できる</h3>
+                    <p>ノートに画像が入っていればそのままブログに表示することができます。画像をアップロードする必要がありません。</p>
+                  </div>
+                </li>
+                <li class="feature">
+                  <div class="feature-thumbnail">
+                    <div class="circle-icon">
+                      <div>
+                        <i class="icon-list-alt"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="feature-content">
+                    <h3>マークダウン形式で見やすく</h3>
+                    <p>ノートはマークダウン形式で記述できるので書きやすく読みやすいです。</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="span4">
+              <h3><span class="slash">//</span>Emarkが話題になっています</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="subheader" data-tpl-remove-if="${pathname}" data-tpl-remove-not-end_with="howtouse">
+      <div class="inner">
+        <div class="container">
+          <h1>使い方</h1>
+        </div> <!-- /.container -->
+      </div> <!-- /inner -->
+    </div>    
+    <div id="subpage" data-tpl-remove-if="${pathname}" data-tpl-remove-not-end_with="howtouse">
+      <div class="container">
+        <div class="row">
+          <div class="span4 feature-block">
+            <h2><span class="slash">//</span>1. ノートブックを作る</h2>
+            <p>
+              Everblogは決められた１つのノートブックをブログとして公開することができます。
+              まずはブログ用に新しいノートブックを作りましょう。
+            </p>
+            <p>
+              既存のノートブックをブログとして公開することもできます。
+            </p>
+          </div>
+          <div class="span8">
+            <h2><span class="slash">//</span>2. ノートブックを「世界中と共有」する</h2>
+            <p class="alert">
+              ブログとして公開するノートブックは「世界中と共有」する必要があります。
+            </p>
+            <p>
+              共有機能を使ってノートブックを「世界中と共有」します。
+            </p>
+            <ul class="thumbnails">
+              <li class="span4"><a href="/img/step1.jpg" class="thumbnail"><img src="/img/step1.jpg"></a></li>
+              <li class="span4"><a href="/img/step2.jpg" class="thumbnail"><img src="/img/step2.jpg"></a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="span8">
+            <h2><span class="slash">//</span>3. Emarkにログインする</h2>
+            <p>Emarkを利用するのに面倒な登録は必要ありません。EVERNOTEのアカウントがあれば誰でも利用できます。</p>
+            <ul class="thumbnails">
+              <li class="span4"><a href="/img/step3.jpg" class="thumbnail"><img src="/img/step3.jpg"></a></li>
+              <li class="span4"><a href="/img/step4.jpg" class="thumbnail"><img src="/img/step4.jpg"></a></li>
+            </ul>
+          </div>
+
+          <div class="span4">
+            <h2><span class="slash">//</span>4. ノートブックを選ぶ</h2>
+            <p>ブログとして公開したいノートブックを選びます。ブログが公開されるURLも決めることができます。</p>
+            <ul class="thumbnails">
+              <li class="span4"><a href="/img/step5.jpg" class="thumbnail"><img src="/img/step5.jpg"></a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="span8">
+            <h2><span class="slash">//</span>5. 設定</h2>
+            <p>ブログのタイトル、サブタイトル、投稿者名を設定します。Twitterのアカウントを設定するとブログのサイドバーにタイムラインが表示されます。</p>
+            <ul class="thumbnails">
+              <li class="span4"><a href="/img/step6.jpg" class="thumbnail"><img src="/img/step6.jpg"></a></li>
+              <li class="span4"><a href="/img/step7.jpg" class="thumbnail"><img src="/img/step7.jpg"></a></li>
+            </ul>
+          </div>
+          <div class="span4">
+            <h2><span class="slash">//</span>6. 同期する</h2>
+            <p>新しくノートを書いたら、同期してブログに反映させましょう。</p>
+            <ul class="thumbnails">
+              <li class="span4"><a href="/img/step8.jpg" class="thumbnail"><img src="/img/step8.jpg"></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="subheader" data-tpl-remove-if="${pathname}" data-tpl-remove-not-end_with="faq">
+      <div class="inner">
+        <div class="container">
+          <h1>よくあるご質問 ( FAQ )</h1>
+        </div>
+      </div>
+    </div>
+    <div id="subpage" data-tpl-remove-if="${pathname}" data-tpl-remove-not-end_with="faq">
+      <div class="container">
+        <div class="row">
+          <div class="span8">
+            <h3><span class="slash">//</span>Serach...</h3>
+            <div class="faq-container">
+              <form class="faq-search">
+                <input type="text" name="search" placeholder="Search By Keyword">
+              </form>
+              <div class="faq-toc">
+                <ol>
+                  <li>1.<a href="#faq-1">How can I get my own domain name?</a></li>
+                </ol>
+              </div>
+              <ol class="faq-list">
+                <li id="faq-1">
+                  <div class="faq-icon">
+                    <div class="circle-icon faq-circle-icon">
+                      <div>1</div>
+                    </div>
+                  </div>
+                  <div class="faq-text">
+                    <h4>無料で使えますか？</h4>
+                    <p>はい、無料で使えます。</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <div class="span4">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="extra">
+      <div class="inner">
+        <div class="container">
+          <div class="row">
+            <div class="span4">
+              <h3><span class="slash">//</span>Quick Links</h3>
+              <ul class="footer-links clearfix">
+                <li><a href="${site_href}">Home</a></li>
+                <li><a href="${site_href}/howtouse">使い方</a></li>
+              </ul>
+              <ul class="footer-links clearfix">
+                <li><a href="${site_href}/faq">FAQ</a></li>
+                <li><a href="${admin_href}">ログイン</a></li>
+              </ul>
+            </div><!-- /span4 -->
+            <div class="span4">
+              <h3><span class="slash">//</span>Stay In Touch</h3>
+              <p>フォローはこちらから</p>
+              <ul class="social-icons-container">
+                <li><a href="#" class="social-icon social-icon-twitter">Twitter</a></li>
+                <li><a href="#" class="social-icon social-icon-googleplus">Google +</a></li>
+                <li><a href="#" class="social-icon social-icon-facebook">Facebook</a></li>
+              </ul>
+            </div><!-- /span4 -->
+          </div><!-- /row -->
+        </div><!-- /container -->
+      </div><!-- /inner -->
+    </div><!-- /extra -->
+
+    <div id="footer">
+      <div class="inner">
+        <div class="container">
+          <div class="row">
+            <div id="footer-copyright" class="span4">© 2012 Reboot Landing.</div>
+            <div id="footer-terms" class="span8"></div>
+          </div><!-- /row -->
+        </div><!-- /container -->
+      </div><!-- /inner -->
+    </div>
+
+    <!-- /container -->
+
+    <!-- <style> -->
+    <!--   #loading { -->
+    <!--     left: 0px; -->
+    <!--     top: 0px; -->
+    <!--     position: fixed; -->
+    <!--     width:  100%; -->
+    <!--     height: 100%; -->
+    <!--     background-color:white; -->
+    <!--     /*opacity:0.7;*/ -->
+    <!--     /*z-index:9999;*/ -->
+    <!--     z-index:1051; -->
+    <!--     background-image:url(/img/103.gif); -->
+    <!--     background-repeat:no-repeat; -->
+    <!--     background-position:center center; -->
+    <!--   } -->
+
+    <!--   #error { -->
+    <!--     left: 0px; -->
+    <!--     top: 0px; -->
+    <!--     position: fixed; -->
+    <!--     width:  100%; -->
+    <!--     height: 100%; -->
+    <!--     color:white; -->
+    <!--     z-index:1052; -->
+    <!--     background-color:blue; -->
+    <!--     display:none; -->
+    <!--   } -->
+    <!-- </style> -->
+
+    <!-- <div id="loading"> -->
+    <!--   <noscript> -->
+    <!--     お使いのブラウザではこのサービスをご利用いただけません。 -->
+    <!--   </noscript> -->
+    <!-- </div> -->
+
+    <!-- <div id="error"> -->
+    <!--   <table border="0" height="100%" width="100%"> -->
+    <!--     <tr><td align="center"><p>エラーが発生しました。処理を続けることができません。</p></td></tr> -->
+    <!--   </table> -->
+    <!-- </div> -->
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script>
+    <script src="/js/lib/subak/template.js"></script>
+    <script>
+      $.ajax("/config.json")
+      .done(function ( json ) {
+        tpl = new Subak.Template(document.documentElement);
+        tpl.load($.extend(json, location));
+        tpl.close();
+      });
+    </script>
+
+    <script src="http://www.cdn-cache.com/20120506/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/reboot-landing/js/lightbox/jquery.lightbox.min.js"></script>
+    <script>
+      $(".thumbnail").lightbox();
+    </script>
+
+  </body>
+</html>
