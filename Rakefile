@@ -42,7 +42,7 @@ namespace:assets do
     ##
     # octopress
     content   = environment["octopress.js.coffee"].to_s
-    octopress = "public/emark.jp/octopress.js"
+    octopress = "public/emark.jp/octopress/index.js"
     File.open octopress, "w" do |fp|
       fp.write content
     end
