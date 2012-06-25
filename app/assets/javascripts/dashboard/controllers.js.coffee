@@ -85,14 +85,16 @@ class Controller.Config extends Spine.Controller
   config: Emark.config
   active: (params)->
     @bid = params.bid
-    if Model.Blog.findByAttribute("bid", @bid)
+    if Model.Blog.exists(@bid)
+#    if Model.Blog.findByAttribute("bid", @bid)
       @delay((=> @render()), 500)
     else
       Model.Blog.fetch()
       Model.Blog.one "refresh", @render
 
   render: =>
-    @blog = Model.Blog.findByAttribute("bid", @bid)
+#    @blog = Model.Blog.findByAttribute("bid", @bid)
+    @blog = Model.Blog.find(@bid)
     @trigger "fatal" if not @blog
     @trigger "loaded"
     @replace @view("config")(@)
@@ -187,7 +189,8 @@ class Controller.Open extends Spine.Controller
 
 class Controller.Close extends Spine.Controller
   active: (params)->
-    blog = Model.Blog.findByAttribute("bid", params.bid)
+    blog = Model.Blog.find(params.bid)
+    #blog = Model.Blog.findByAttribute("bid", params.bid)
     return @stack.error.trigger("show") if not blog
     blog.destroy()
     blog.one "ajaxSuccess", @destroyed
