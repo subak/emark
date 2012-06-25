@@ -1,5 +1,5 @@
 .modal.fade
-  %form#config-form.form-horizontal{action: "/config/#{@blog.bid}", method: "PUT"}
+  %form#config-form.form-horizontal{action: "/config/#{@blog.id}", method: "PUT"}
     .modal-header
       %a.close{data-dismiss: "modal"} x
       %h3 設定
@@ -15,32 +15,53 @@
         .tab-content
           #config-basic.tab-pane.active
             .control-group
-              %label.control-label{for: "input_title"} タイトル
+              - id = "title"
+              %label.control-label{for: id} タイトル
               .controls
-                %input#input_title.input-xlarge{name: "title", value: @blog.title, type: "text"}
+                %input.input-xlarge{id: id, name: id, value: @blog[id], type: "text"}
             .control-group
-              %label.control-label{for: "input_text_subtitle"} サブタイトル
+              - id = "subtitle"
+              %label.control-label{for: id} サブタイトル
               .controls
-                %textarea#input_subtitle.input-xlarge{name: "subtitle", rows: "3"}= @blog.subtitle
+                %textarea.input-xlarge{id: id, name: id, rows: "3"}= @blog[id]
             .control-group
-              %label.control-label{for: "input_author"} 投稿者名
+              - id = "author"
+              %label.control-label{for: id} 投稿者名
               .controls
-                %input#input_author.input-large{name: "author", value: @blog.author, type: "text"}
+                %input.input-large{id:id, name: id, value: @blog[id], type: "text"}
           #config-webservice.tab-pane
             .control-group
-              %label.control-label{for: "input_text_twitter"} Twitter
+              - id = "about_me"
+              %label.control-label{for: id} 自己紹介
               .controls
-                %input#input_text_twitter.input-medium{name: "twitter", value: @blog.twitter, type: "text"}
+                %textarea.input-xlarge{id: id, name: id, rows: "3"}= @blog[id]
             .control-group
-              %label.control-label{for: "input_disqus"} DISQUS
+              - id = "twitter_user"
+              %label.control-label{for: id} Twitter
               .controls
-                %input#input_disqus.input-medium{name: "disqus", value: @blog.disqus, type: "text"}
+                %input.input-medium{id: id, name: id, value: @blog[id], type: "text"}
+            .control-group
+              - id = "disqus_short_name"
+              %label.control-label{for: id} DISQUS
+              .controls
+                %input.input-medium{id: id, name: id, value: @blog[id], type: "text"}
           #config-behavior.tab-pane
             .control-group
-              %label.control-label{for: "input_num_of_recent"} 最新のエントリー数
+              - id = "recent_posts"
+              %label.control-label{for: id} 最新のエントリー
               .controls
+                %input.input-mini{id: id, name: id, value: @blog[id], type: "text"}
             .control-group
-              %label.control-label{for: "input_num_of_index"} インデックスのエントリー数
+              - id = "paginate"
+              %label.control-label{for: id} ページのエントリー
+              .controls
+                %input.input-mini{id: id, name: id, value: @blog[id], type: "text"}
+            .control-group
+              - id = "excerpt_count"
+              %label.control-label{for: id} 抜粋する段落
+              .controls
+                %input.input-mini{id: id, name: id, value: @blog[id], type: "text"}
+
     .modal-footer
       %button.btn{data-dismiss: "modal"} キャンセル
       %button.btn.btn-primary{type: "submit"} 変更を保存

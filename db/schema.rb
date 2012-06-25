@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120625151439) do
+ActiveRecord::Schema.define(:version => 20120625152705) do
 
   create_table "blog", :force => true do |t|
     t.text    "bid",                 :default => "", :null => false
@@ -26,6 +26,7 @@ ActiveRecord::Schema.define(:version => 20120625151439) do
     t.text    "disqus_short_name"
     t.text    "twitter_user"
     t.integer "twitter_tweet_count", :default => 4
+    t.text    "about_me"
   end
 
   add_index "blog", ["bid"], :name => "index_blog_on_blog_id", :unique => true

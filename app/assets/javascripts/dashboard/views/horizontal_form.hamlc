@@ -1,0 +1,5 @@
+- for name, attributes in @definition
+  - id = Math.random().toString().slice(2)
+  .control-group
+    %label
+  

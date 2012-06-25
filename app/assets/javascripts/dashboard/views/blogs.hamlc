@@ -8,7 +8,7 @@
               %tr
                 %td
                   %h3
-                    %a{href: "http://#{blog.bid}"}= blog.title
+                    %a{href: "http://#{blog.id}"}= blog.title
               %tr
                 %td
                   %p= blog.subtitle
@@ -16,16 +16,16 @@
                 %td
                   .edit-success
                     %p
-                      %a.sync.btn.btn-warning{href: "/sync/#{blog.bid}"}
+                      %a.sync.btn.btn-warning{href: "/sync/#{blog.id}"}
                         %i.icon-refresh.icon-white
                         同期
                     %p
-                      %a.config.btn.btn-info{href: "/config/#{blog.bid}"}
+                      %a.config.btn.btn-info{href: "/config/#{blog.id}"}
                         %i.icon-cog.icon-white
                         設定
                   .edit-danger
                     %p
-                      %a.delete.btn.btn-danger{href: "/close/#{blog.bid}", data-msg: "削除したデータは元に戻せません。よろしいですか？"}
+                      %a.delete.btn.btn-danger{href: "/close/#{blog.id}", data-msg: "削除したデータは元に戻せません。よろしいですか？"}
                         %i.icon-trash.icon-white
                         削除
     .span4

@@ -9,6 +9,7 @@
 #= require_tree ./dashboard/lib
 #= require_self
 #= require ./config
+#= require ./dashboard/helpers
 #= require ./dashboard/models
 #= require ./dashboard/controllers
 #= require_tree ./dashboard/views

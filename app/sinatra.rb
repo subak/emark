@@ -254,14 +254,24 @@ end
 
 put "/blogs/:id" do |id|
   params = JSON.parse(request.body.read)
+  params["about_me"]            = nil if "" == params["about_me"]
+  params["twitter_tweet_count"] = nil if "" == params["twitter_tweet_count"]
+
   update = UpdateManager.new Table.engine
   update.table db.blog
   update.where(db.blog[:uid].eq @session[:uid])
-  update.where(db.blog[:id].eq id)
+  update.where(db.blog[:id].eq  id)
   update.set([
-               [db.blog[:title],    params["title"]],
-               [db.blog[:subtitle], params["subtitle"]],
-               [db.blog[:author],   params["author"]]
+               [db.blog[:title],               params["title"]],
+               [db.blog[:subtitle],            params["subtitle"]],
+               [db.blog[:author],              params["author"]],
+               [db.blog[:paginate],            params["paginate"]],
+               [db.blog[:recent_posts],        params["recent_posts"]],
+               [db.blog[:excerpt_count],       params["excerpt_count"]],
+               [db.blog[:about_me],            params["about_me"]],
+               [db.blog[:disqus_short_name],   params["disqus_short_name"]],
+               [db.blog[:twitter_user],        params["twitter_user"]],
+               [db.blog[:twitter_tweet_count], params["twitter_tweet_count"]]
              ])
   db.transaction do
     db.execute update.to_sql
