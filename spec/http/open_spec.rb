@@ -1,10 +1,15 @@
 # -*- coding: utf-8; -*-
 
-require "./app/sinatra"
-config.environment  = :spec
-config.logger_level = Logger::DEBUG
-require "./spec/http/spec_helper.rb"
+require "simplecov"
+SimpleCov.start do
+  add_filter "vendor/bundle/"
+  add_filter "lib/Evernote/"
+end
 
+require "./app/sinatra"
+config.logger_level = Logger::DEBUG
+
+require "./spec/http/spec_helper.rb"
 RSpec.configure do
   include Helpers
   include Rack::Test::Methods

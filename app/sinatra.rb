@@ -252,7 +252,7 @@ post "/blogs" do
 end
 
 
-put "/blogs/:id" do |id|
+put "/blogs/:bid" do |bid|
   params = JSON.parse(request.body.read)
   params["about_me"]            = nil if "" == params["about_me"]
   params["twitter_tweet_count"] = nil if "" == params["twitter_tweet_count"]
@@ -260,7 +260,7 @@ put "/blogs/:id" do |id|
   update = UpdateManager.new Table.engine
   update.table db.blog
   update.where(db.blog[:uid].eq @session[:uid])
-  update.where(db.blog[:id].eq  id)
+  update.where(db.blog[:bid].eq  bid)
   update.set([
                [db.blog[:title],               params["title"]],
                [db.blog[:subtitle],            params["subtitle"]],
@@ -274,7 +274,11 @@ put "/blogs/:id" do |id|
                [db.blog[:twitter_tweet_count], params["twitter_tweet_count"]]
              ])
   db.transaction do
-    db.execute update.to_sql
+    begin
+      db.execute update.to_sql
+    rescue SQLite3::ConstraintException
+      raise Forbidden
+    end
     raise Forbidden if (db.changes == 1).!
   end
 
@@ -285,18 +289,12 @@ end
 
 ##
 # ブログを削除
-delete "/blogs/:id" do |id|
-  select = db.blog.project(db.blog[:bid])
-  select.where(db.blog[:uid].eq @session[:uid])
-  select.where(db.blog[:id].eq id)
-  bid = db.get_first_value select.to_sql
-  raise Forbidden if bid.!
-
+delete "/blogs/:bid" do |bid|
   db.transaction do
     delete = DeleteManager.new Table.engine
     delete.from db.blog
     delete.where(db.blog[:uid].eq @session[:uid])
-    delete.where(db.blog[:id].eq  id)
+    delete.where(db.blog[:bid].eq bid)
     db.execute delete.to_sql
     raise Forbidden if (db.changes == 1).!
 
@@ -408,6 +406,8 @@ get "/sync/:bid" do |bid|
 end
 
 
+##
+# sidを付ける意味があるのか？
 delete "/logout/:sid" do |sid|
   raise Fatal if @session[:sid] != sid
 

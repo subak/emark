@@ -1,10 +1,15 @@
 # -*- coding: utf-8; -*-
 
-require "./app/sinatra"
-config.environment  = :spec
-config.logger_level = Logger::INFO
-require "./spec/http/spec_helper.rb"
+require "simplecov"
+SimpleCov.start do
+  add_filter "vendor/bundle/"
+  add_filter "lib/Evernote/"
+end
 
+require "./app/sinatra"
+config.logger_level = Logger::INFO
+
+require "./spec/http/spec_helper.rb"
 RSpec.configure do
   include Helpers
   include Rack::Test::Methods
@@ -42,14 +47,14 @@ describe "put /config" do
 
     it "不正なblog_id" do
       sync do
-        put("/config/test.example.com", {}, {
+        put("/blogs/test.example.com", {}.to_json, {
               "HTTP_COOKIE" => @http_cookie
             })
         last_response.forbidden?.should be_true
       end
     end
 
-    describe "200" do
+    describe "blog有り" do
       before:all do
         sync do
           insert = db.blog.insert_manager
@@ -63,18 +68,20 @@ describe "put /config" do
 
       it "パラメータ無し" do
         sync do
-          put("/config/test.example.com", {}, {
+          put("/blogs/test.example.com", {}.to_json, {
                 "HTTP_COOKIE" => @http_cookie
               })
-          last_response.ok?.should be_true
+          last_response.forbidden?.should be_true
         end
       end
 
       it "パラメータ有り" do
         sync do
-          put("/config/test.example.com", {
-                "title" => "hogehuga"
-              }, {
+          put("/blogs/test.example.com", {
+                "paginate"      => 3,
+                "recent_posts"  => 4,
+                "excerpt_count" => 12
+              }.to_json, {
                 "HTTP_COOKIE" => @http_cookie
               })
           last_response.ok?.should be_true
@@ -84,7 +91,7 @@ describe "put /config" do
   end
 end
 
-describe %!delete "/close/:bid"! do
+describe %!delete "/blogs/:bid"! do
   before:all do
     sync do
       delete_blog
@@ -93,14 +100,14 @@ describe %!delete "/close/:bid"! do
 
   it "sid無し" do
     sync do
-      delete "/close/test.example.com"
+      delete "/blogs/test.example.com"
       last_response.forbidden?.should be_true
     end
   end
 
   it "不正なsid" do
     sync do
-      delete("/close/test.example.com", {}, {
+      delete("/blogs/test.example.com", {}, {
                "HTTP_COOKIE" => "sid=joifei83j3"
              })
       last_response.forbidden?.should be_true
@@ -117,7 +124,7 @@ describe %!delete "/close/:bid"! do
     it "不正なbid" do
       sync do
         invalid_bid = "hoge.example.com"
-        delete("/close/#{invalid_bid}", {}, {
+        delete("/blogs/#{invalid_bid}", {}, {
                  "HTTP_COOKIE" => @http_cookie
                })
         last_response.forbidden?.should be_true
@@ -144,7 +151,7 @@ describe %!delete "/close/:bid"! do
           FileUtils.touch path
           FileUtils.symlink path, "#{path}.link" if File.exist?("#{path}.link").!
 
-          delete("/close/#{@bid}", {}, {
+          delete("/blogs/#{@bid}", {}, {
                    "HTTP_COOKIE" => @http_cookie
                  })
           last_response.ok?.should be_true
@@ -171,7 +178,7 @@ describe %!delete "/close/:bid"! do
           db.execute insert.to_sql
 
 
-          delete("/close/#{@bid}", {}, {
+          delete("/blogs/#{@bid}", {}, {
                    "HTTP_COOKIE" => @http_cookie
                  })
           last_response.ok?.should be_true
@@ -196,7 +203,7 @@ describe "logout" do
       get_session
       @http_cookie = "sid=#{@session[:sid]}"
 
-      delete("/logout", {}, {
+      delete("/logout/#{@session[:sid]}", {}, {
                "HTTP_COOKIE" => @http_cookie
              })
 
@@ -204,11 +211,11 @@ describe "logout" do
       select.where(db.session[:sid].eq @session[:sid])
       db.get_first_row(select.to_sql).should be_false
 
-      last_response.body.should == config.site_href
+      JSON.parse(last_response.body)["location"].should == config.site_href
 
       insert = db.session.insert_manager
       insert.insert([
-                      [db.session[:uid],   @session[:uid]],
+                      [db.session[:uid],       @session[:uid]],
                       [db.session[:shard],     @session[:shard]],
                       [db.session[:authtoken], @session[:authtoken]],
                       [db.session[:expires],   @session[:expires]],
@@ -252,7 +259,7 @@ describe %!put "/sync/:bid"! do
   describe "sid有り" do
     it "不正なbid" do
       sync do
-        put("/sync/hoge.example.com", {}, {
+        get("/sync/hoge.example.com", {}, {
               "HTTP_COOKIE" => @http_cookie
             })
         last_response.forbidden?.should be_true
@@ -261,7 +268,7 @@ describe %!put "/sync/:bid"! do
 
     it "200" do
       sync do
-        put("/sync/#{@bid}", {}, {
+        get("/sync/#{@bid}", {}, {
               "HTTP_COOKIE" => @http_cookie
             })
         last_response.ok?.should be_true
@@ -272,7 +279,7 @@ describe %!put "/sync/:bid"! do
 
     it "重複" do
       sync do
-        put("/sync/#{@bid}", {}, {
+        get("/sync/#{@bid}", {}, {
               "HTTP_COOKIE" => @http_cookie
             })
         last_response.ok?.should be_true
