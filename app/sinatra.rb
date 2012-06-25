@@ -242,13 +242,11 @@ post "/blogs" do
   sleep 1
   env["rack.session"][:notebooks] = nil
 
-  {
-    :id       => id,
-    :bid      => bid,
-    :notebook => notebook,
-    :title    => notebookName,
-    :author   => bid
-  }.to_json
+  select = db.blog.project(SqlLiteral.new "*")
+  select.where(db.blog[:id].eq id)
+  blog = db.get_first_row select.to_sql
+
+  blog.to_json
 end
 
 
