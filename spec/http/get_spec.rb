@@ -20,7 +20,7 @@ describe "dashboard" do
   describe "sid無し" do
     it "403" do
       sync do
-        get(admin_url "/dashboard")
+        get(admin_url "/blogs")
         last_response.forbidden?.should be_true
       end
     end
@@ -35,10 +35,10 @@ describe "dashboard" do
 
     it "公開ブログ無し" do
       sync do
-        get(admin_url("/dashboard"), {}, {
+        get(admin_url("/blogs"), {}, {
               "HTTP_COOKIE" => "sid=#{@session[:sid]}"
             })
-        JSON.parse(last_response.body)["blogs"].size.should == 0
+        JSON.parse(last_response.body).size.should == 0
       end
     end
 
@@ -54,10 +54,10 @@ describe "dashboard" do
                         ])
           db.execute insert.to_sql
 
-          get(admin_url("/dashboard"), {}, {
+          get(admin_url("/blogs"), {}, {
                 "HTTP_COOKIE" => "sid=#{@session[:sid]}"
               })
-          JSON.parse(last_response.body)["blogs"].size.should == n
+          JSON.parse(last_response.body).size.should == n
         end
       end
     end
@@ -105,7 +105,7 @@ describe "config" do
       end
     end
 
-    it "ブログが見つからない" do
+    xit "ブログが見つからない" do
       sync do
         get(admin_url("/config/hoge.example.com"), {}, {
               "HTTP_COOKIE" => "sid=#{@session[:sid]}"
@@ -114,7 +114,7 @@ describe "config" do
       end
     end
 
-    it "ブログ取得" do
+    xit "ブログ取得" do
       sync do
         get(admin_url("/config/#{@blog_id}"), {}, {
               "HTTP_COOKIE" => "sid=#{@session[:sid]}"
@@ -135,14 +135,14 @@ describe "check" do
 
   it "sid無し" do
     sync do
-      get admin_url("/check/blogid/test.example.com")
+      get admin_url("/check/test.example.com")
       last_response.forbidden?.should be_true
     end
   end
 
   it "不正なsid" do
     sync do
-      get(admin_url("/check/blogid/test.example.com"), {}, {
+      get(admin_url("/check/test.example.com"), {}, {
             "HTTP_COOKIE" => "sid=3ru98fjier"
           })
       last_response.forbidden?.should be_true
@@ -154,12 +154,12 @@ describe "check" do
       sync do
         get_session
 
-        @blog_id  = "test.example.com"
+        @bid      = "test.example.com"
         @notebook = md5
         insert = db.blog.insert_manager
         insert.insert([
-                        [db.blog[:uid],  @session[:uid]],
-                        [db.blog[:bid],  @blog_id],
+                        [db.blog[:uid],      @session[:uid]],
+                        [db.blog[:bid],      @bid],
                         [db.blog[:notebook], @notebook]
                       ])
         db.execute insert.to_sql
@@ -168,21 +168,19 @@ describe "check" do
 
     it "ブログが見つかった" do
       sync do
-        get(admin_url("/check/blogid/#{@blog_id}"), {}, {
+        get(admin_url("/check/bid"), {bid: @bid}, {
               "HTTP_COOKIE" => "sid=#{@session[:sid]}"
             })
-        json = JSON.parse(last_response.body)
-        json["available"].should be_false
+        last_response.body.should == "false"
       end
     end
 
     it "ブログが見つからない" do
       sync do
-        get(admin_url("/check/blogid/hoge.exsample.com"), {}, {
+        get(admin_url("/check/bid"), {bid: "hoge.example.com"}, {
               "HTTP_COOKIE" => "sid=#{@session[:sid]}"
             })
-        json = JSON.parse(last_response.body)
-        json["available"].should be_true
+        last_response.body.should == "true"
       end
     end
   end

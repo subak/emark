@@ -369,7 +369,8 @@ get "/check/bid" do
   raise Forbidden if bid.!
   select = db.blog.project(db.blog[:bid])
   select.where(db.blog[:bid].eq bid)
-  check = db.get_first_value select.to_sql
+  sql = select.to_sql;
+  check = db.get_first_value sql
 
   "#{check.!}"
 end

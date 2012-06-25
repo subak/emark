@@ -27,13 +27,12 @@ describe "ノートブック公開" do
 
     it "ノートブックのリストを取得" do
       sync do
-        get(admin_url("/open"), {}, {
+        get(admin_url("/notebooks"), {}, {
               "HTTP_COOKIE" => @http_cookie
             })
 
         json = JSON.parse(last_response.body)
-        json["notebooks"].should be_true
-
+        json.should be_kind_of(Array)
         logger.debug last_response.body
       end
     end
@@ -73,12 +72,12 @@ describe "ノートブック公開" do
 
       it "共有されないノートは選択できない" do
         sync do
-          get(admin_url("/open"), {}, {
+          get(admin_url("/notebooks"), {}, {
                 "HTTP_COOKIE" => "sid=#{@session[:sid]}"
               })
           json = JSON.parse(last_response.body)
 
-          availables = json["notebooks"].select do |notebook|
+          availables = json.select do |notebook|
             notebook["available"]
           end
           availables.size.should == 0
@@ -101,7 +100,7 @@ describe "ノートブック公開" do
               end
             end
 
-            get(admin_url("/open"), {}, {
+            get(admin_url("/notebooks"), {}, {
                   "HTTP_COOKIE" => "sid=#{@session[:sid]}"
                 })
           end
@@ -110,7 +109,7 @@ describe "ノートブック公開" do
         it "利用可能" do
           sync do
             json = JSON.parse(last_response.body)
-            availables = json["notebooks"].select do |notebook|
+            availables = json.select do |notebook|
               notebook["available"]
             end
             availables.size.should >= 1
@@ -140,7 +139,7 @@ describe "ノートブック公開" do
               db.execute insert.to_sql
             end
 
-            get(admin_url("/open"), {}, {
+            get(admin_url("/notebooks"), {}, {
                   "HTTP_COOKIE" => @http_cookie
                 })
           end
@@ -150,7 +149,7 @@ describe "ノートブック公開" do
           sync do
             json = JSON.parse(last_response.body)
 
-            availables = json["notebooks"].select do |notebook|
+            availables = json.select do |notebook|
               notebook["available"]
             end
 
