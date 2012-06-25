@@ -145,7 +145,7 @@ class Controller.Open extends Spine.Controller
     Model.Notebook.fetch()
 
   render: =>
-    @stack.loading.trigger "hide"
+    @trigger "loaded"
     @notebooks = Model.Notebook.all()
     @replace @view("open")(@)
     @el.modal "show"

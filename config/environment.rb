@@ -38,7 +38,7 @@ else
   config.admin_protocol = "https"
   config.admin_host =     "localhost"
   config.admin_port =     4430
-  config.cdn_host =       "emark.cdn.local"
+  config.cdn_host =       "emark.cdn.localhost"
   config.cdn_port =       8080
   config.nginx_conf =     "/Volumes/Data/Users/hiro/Dev/nginx/conf/include/emark.conf"
   config.logger_level =   Logger::INFO

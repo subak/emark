@@ -4,6 +4,7 @@
 #= require spine/manager
 #= require spine/ajax
 #= require spine/route
+#= require hamlcoffee
 
 #= require ./config
 #= require_tree ./dashboard/lib

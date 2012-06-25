@@ -5,6 +5,9 @@ class Model.Blog extends Spine.Model
 class Model.Notebook extends Spine.Model
   @configure "Notebook", "notebookGuid", "notebookName", "available"
   @extend Spine.Model.Ajax
+  @fromJSON: (notebooks)->
+    for notebook in notebooks
+      new @(id: notebook.notebookGuid, name: notebook.notebookName, available: notebook.available)
 
 class Model.Sync extends Spine.Model
   @configure "Sync", "queued"

@@ -1,0 +1,52 @@
+.modal.fade
+  .modal-header
+    %a.close{"data-dismiss": "modal"} x
+    %h3 ブログを公開する
+
+  - available = false
+  - for notebook in @notebooks
+    - available |= notebook.available
+
+  - if available
+    %form#blog-form.form-horizontal
+      .modal-body
+        %fieldset
+          .control-group
+            %label.control-label ノートブック
+            .controls
+              %select{name: "notebook"}
+                - for notebook in @notebooks
+                  - if notebook.available
+                    %option{value: notebook.id}
+                      = notebook.name
+          .control-group
+            %label.control-label{for: "input-subdomain"} 公開 URL
+            .controls
+              .input-prepend.input-append
+                %span.add-on><
+                  http://
+                %input#input-subdomain.input-medium{name: "subdomain", type: "text", placeholder: "サブドメイン"}><
+                %span.add-on= ".#{@config.site_host}/"
+                %input{name: "domain", value: @config.site_host, type: "hidden"}
+              %p#invalid-subdomain-with-required.help-block.hidden
+                URLが入力されていません。
+              %p#invalid-url-with-url.help-block.hidden
+                URLの形式が無効です。
+                URLに
+                %strong><
+                  利用可能な文字は [0-9a-z.-]
+                です。
+                %strong><
+                  最初と最後に [.-]
+                を使用することはできません。
+                %strong><
+                  [.-] は続けて
+                使用することができません。
+              %p#invalid-bid-with-remote.help-block.hidden
+                URLはすでに使用されています。
+              %input.input-mini{name: "url", type: "text", style: "visibility:hidden;"}
+              %input.input-mini{name: "bid", type: "text", style: "visibility:hidden;"}
+      .modal-footer
+        %button.btn.btn-primary.pull-right{type: "submit", style: "margin-left:10px;", data-msg-confirm: "ノートブックとブログのURLは一度公開すると変更できません。\n入力した内容で公開してよろしいですか？"}<
+          ブログを公開する
+        %button.btn.pull-right{data-dismiss: "modal"} キャンセル

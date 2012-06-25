@@ -132,6 +132,6 @@ server {
   root <%= "#{config.public}/emark.jp" %>;
 
   location / {
-    rewrite ^/\d{8}/(.*)$ /$1 break;
+    rewrite "^/\d{14}/(.*)$" /$1 break;
   }
 }

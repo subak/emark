@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 
 require "pp"
+require "bundler"
+
+if "test" == ENV["RAILS_ENV"]
+  Bundler.require :test
+  require "ruby-debug"
+  Debugger.start
+end
 
 namespace:assets do
   def haml targets
-    require "bundler"
     require "sass/plugin"
     Bundler.require :assets
     require "./config/environment"
@@ -29,7 +35,6 @@ namespace:assets do
   end
 
   def sprockets targets
-    require "bundler"
     Bundler.require :assets
 
     vendors = []
@@ -114,7 +119,6 @@ namespace:assets do
 
   desc "watch"
   task:watch do
-    require "bundler"
     require "sass/plugin"
     Bundler.require :assets
 
