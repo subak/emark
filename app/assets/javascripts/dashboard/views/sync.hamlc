@@ -1,0 +1,14 @@
+.modal.fade
+  .modal-header
+    %a.close{data-dismiss: "modal"} x
+    %h3 同期
+  .modal-body
+    - if @model.queued
+      %p.alert.alert-info
+        同期がスケジューリングされました。
+    - else
+      %p.alert
+        同期はすでにスケジューリングされています。
+        更新が反映されるまでしばらくお待ちください
+  .modal-footer
+    %button.btn{data-dismiss: "modal"} 閉じる

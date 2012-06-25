@@ -123,10 +123,21 @@ namespace:assets do
     Bundler.require :assets
 
     fsevent = FSEvent.new
-    fsevent.watch ["app/assets/javascripts", "app/assets/stylesheets", "app/views"] do |path|
+
+    paths = ["app/assets/javascripts", "app/assets/stylesheets", "app/views"]
+    options = {
+      :latency => 2
+    }
+
+    fsevent.watch paths, options do |path|
       begin
         if path[0] =~ %r{app/assets/javascripts}
-          Rake::Task["assets:sprockets:javascripts"].execute
+          if path[0] =~ %r{dashboard}
+            Rake::Task["assets:sprockets:javascripts:dashboard"].execute
+          end
+          if path[0] =~ %r{octopress}
+            Rake::Task["assets:sprockets:javascripts:octopress"].execute
+          end
         end
 
         if path[0] =~ %r{app/assets/stylesheets}
