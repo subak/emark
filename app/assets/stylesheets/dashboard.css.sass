@@ -4,6 +4,8 @@ body
 .blog-table
   height: 250px
   width:  100%
+
+.blogs .blog-table
   tr:nth-child(1) td
     vertical-align: top
   tr:nth-child(2) td
@@ -27,6 +29,13 @@ body
   background:
     color:    blue
   display:    none
+  table
+    border: 0
+    width:  100%
+    height: 100%
+    td
+      text:
+        align: center
 
 #loading
   @include     overlay

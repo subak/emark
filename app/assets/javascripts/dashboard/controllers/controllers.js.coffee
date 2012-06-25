@@ -108,7 +108,7 @@ class Controller.Config extends Spine.Controller
 
   switch_tab: (event)->
     event.preventDefault()
-    $(event.currentTarget).tab("show")
+    $(this).tab("show")
 
   submit: (event)->
     event.preventDefault()

@@ -1,0 +1,57 @@
+#index-container.container
+  .row
+    - for blog in @blogs
+      .blogs.span4
+        %section.well
+          %table.blog-table
+            %tbody
+              %tr
+                %td
+                  %h3
+                    %a{href: "http://#{blog.bid}"}= blog.title
+              %tr
+                %td
+                  %p= blog.subtitle
+              %tr
+                %td
+                  .edit-success
+                    %p
+                      %a.sync.btn.btn-warning{href: "/sync/#{blog.bid}"}
+                        %i.icon-refresh.icon-white
+                        同期
+                    %p
+                      %a.config.btn.btn-info{href: "/config/#{blog.bid}"}
+                        %i.icon-cog.icon-white
+                        設定
+                  .edit-danger
+                    %p
+                      %a.delete.btn.btn-danger{href: "/close/#{blog.bid}", data-msg: "削除したデータは元に戻せません。よろしいですか？"}
+                        %i.icon-trash.icon-white
+                        削除
+    .span4
+      %section.well
+        %table.blog-table
+          %thead
+            %tr
+              %td
+                %ul.nav.nav-tabs.nav-stacked{style: "background-color:white;"}
+                  %li
+                    %a{href: "http://hb.afl.rakuten.co.jp/hgc/0f77f894.0636ec06.0f77f895.19b8d4eb/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fgetplus%2f2245017%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fgetplus%2fi%2f11557540%2f", target: "_blank"} EVERNOTE プレミアムパック 1年版
+                  %li
+                    %a{href: "http://hb.afl.rakuten.co.jp/hgc/0f77f9ea.f60ea7f6.0f77f9eb.07d0d7d9/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fsrcc%2fa1201e%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fsrcc%2fi%2f10000015%2f", target: "_blank"} 保存するメモ帳 abrAsus Evernote バンドル版
+                  %li
+                    %a{href: "http://hb.afl.rakuten.co.jp/hgc/0f77fa6e.7809d1ac.0f77fa6f.346e2d8c/?pc=http%3a%2f%2fitem.rakuten.co.jp%2fbook%2f6588405%2f%3fscid%3daf_ich_link_txt&m=http%3a%2f%2fm.rakuten.co.jp%2fbook%2fi%2f13773205%2f", target: "_blank"} EVERNOTE「超」仕事術
+          %tbody
+            %tr
+              %td{style: "vertical-align:bottom;"}
+                %p#open-blog
+                  %a.btn.btn-primary.btn-large{href: "/open", style: "display:block"}
+                    %i.icon-pencil.icon-white
+                    ブログを公開する
+                %p#edit-blogs.hidden
+                  %button.btn.btn-danger{style: "width:100%;"}
+                    %i.icon-wrench.icon-white
+                    編集
+                  %button.btn.btn-success.btn-large{style: "width:100%;"}
+                    %i.icon-ok.icon-white
+                    完了

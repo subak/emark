@@ -1,0 +1,46 @@
+.modal.fade
+  %form#config-form.form-horizontal{action: "/config/#{@blog.bid}", method: "PUT"}
+    .modal-header
+      %a.close{data-dismiss: "modal"} x
+      %h3 設定
+    .modal-body
+      .tabbable
+        %ul.nav.nav-tabs
+          %li.active
+            %a{href: "#config-basic", data-toggle: "tab"} 基本情報
+          %li
+            %a{href: "#config-webservice", data-toggle: "tab"} Webサービス
+          %li
+            %a{href: "#config-behavior", data-toggle: "tab"} 動作
+        .tab-content
+          #config-basic.tab-pane.active
+            .control-group
+              %label.control-label{for: "input_title"} タイトル
+              .controls
+                %input#input_title.input-xlarge{name: "title", value: @blog.title, type: "text"}
+            .control-group
+              %label.control-label{for: "input_text_subtitle"} サブタイトル
+              .controls
+                %textarea#input_subtitle.input-xlarge{name: "subtitle", rows: "3"}= @blog.subtitle
+            .control-group
+              %label.control-label{for: "input_author"} 投稿者名
+              .controls
+                %input#input_author.input-large{name: "author", value: @blog.author, type: "text"}
+          #config-webservice.tab-pane
+            .control-group
+              %label.control-label{for: "input_text_twitter"} Twitter
+              .controls
+                %input#input_text_twitter.input-medium{name: "twitter", value: @blog.twitter, type: "text"}
+            .control-group
+              %label.control-label{for: "input_disqus"} DISQUS
+              .controls
+                %input#input_disqus.input-medium{name: "disqus", value: @blog.disqus, type: "text"}
+          #config-behavior.tab-pane
+            .control-group
+              %label.control-label{for: "input_num_of_recent"} 最新のエントリー数
+              .controls
+            .control-group
+              %label.control-label{for: "input_num_of_index"} インデックスのエントリー数
+    .modal-footer
+      %button.btn{data-dismiss: "modal"} キャンセル
+      %button.btn.btn-primary{type: "submit"} 変更を保存
