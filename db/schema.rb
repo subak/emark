@@ -11,15 +11,21 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120619174745) do
+ActiveRecord::Schema.define(:version => 20120625151439) do
 
   create_table "blog", :force => true do |t|
-    t.text    "bid",      :default => "", :null => false
-    t.integer "uid",      :default => 0,  :null => false
+    t.text    "bid",                 :default => "", :null => false
+    t.integer "uid",                 :default => 0,  :null => false
     t.text    "notebook"
     t.text    "title"
     t.text    "subtitle"
     t.text    "author"
+    t.integer "paginate",            :default => 10, :null => false
+    t.integer "recent_posts",        :default => 5,  :null => false
+    t.integer "excerpt_count",       :default => 3,  :null => false
+    t.text    "disqus_short_name"
+    t.text    "twitter_user"
+    t.integer "twitter_tweet_count", :default => 4
   end
 
   add_index "blog", ["bid"], :name => "index_blog_on_blog_id", :unique => true
