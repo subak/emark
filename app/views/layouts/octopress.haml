@@ -9,11 +9,10 @@
   %meta{name: "HandheldFriendly", content: "True"}
   %meta{name: "MobileOptimized",  content: "320"}
   %meta{name: "viewport",         content: "width=device-width, initial-scale=1"}
-  %link{href: "#{config.octopress_href}/favicon.png",             rel: "icon"}
-  %link{href: "#{config.octopress_href}/stylesheets/screen.css",  rel: "stylesheet", media: "screen, projection"}
-  %script{src: "#{config.octopress_href}/javascripts/modernizr-2.0.js", defer: true}
-  %script{src: "#{config.octopress_href}/javascripts/ender.js",         defer: true}
-  -# %script{src: "#{config.octopress_href}/javascripts/octopress.js",     defer: true}
+  %link{href: "#{config.cdn_href}/octopress/favicon.png",             rel: "icon"}
+  %link{href: "#{config.cdn_href}/octopress/stylesheets/screen.css",  rel: "stylesheet", media: "screen, projection"}
+  %script{src: "#{config.cdn_href}/octopress/javascripts/modernizr-2.0.js", defer: true}
+  %script{src: "#{config.cdn_href}/octopress/javascripts/ender.js",         defer: true}
 
   / Fonts from Google''s Web font directory at http://google.com/webfonts
   %link{href: "http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic", rel: "stylesheet"}
@@ -68,7 +67,7 @@
               src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
               </script>
   %footer{role: "contentinfo"}
-  %script{src: "#{config.site_href}/octopress/index.js", defer: true}
+  %script{src: "#{config.cdn_href}/octopress/index.js", defer: true}
 
 :plain
   </html>

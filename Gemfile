@@ -36,6 +36,7 @@ group :assets do
   gem "rails",        :require => false
   gem "spine-rails",  :require => false
   gem "jquery-rails", :require => false
+  gem "compass"
 end
 
 group :test do

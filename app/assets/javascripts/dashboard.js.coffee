@@ -6,73 +6,52 @@
 #= require spine/route
 #= require hamlcoffee
 
-#= require ./config
 #= require_tree ./dashboard/lib
-#= require ./dashboard/before
-#= require_tree ./dashboard/models
-#= require_tree ./dashboard/controllers
-#= require_tree ./dashboard/views
 #= require_self
+#= require ./config
+#= require ./dashboard/models
+#= require ./dashboard/controllers
+#= require_tree ./dashboard/views
+#= require ./dashboard/index
 
-class Manager.Pages extends Spine.Stack
-  controllers:
-    token:     Controller.Token
-    dashboard: Controller.Dashboard
-    open:      Controller.Open
-    config:    Controller.Config
-    close:     Controller.Close
-    sync:      Controller.Sync
-    logout:    Controller.Logout
-    loading:   Controller.Loading
-    error:     Controller.Error
-  routes:
-    "/":            "token"
-    "/dashboard":   "dashboard"
-    "/open":        "open"
-    "/close/:bid":  "close"
-    "/config/:bid": "config"
-    "/sync/:bid":   "sync"
-    "/logout":      "logout"
+@Model      = {}
+@Controller = {}
+@Manager    = {}
 
-class App extends Spine.Controller
-  config: Emark.Config
-  constructor: ->       
-    @el = $("body")
-    super
+Spine.Controller.include
+  view: (name) ->
+    JST["dashboard/views/#{name}"]
 
-    Model.Blog.bind     "ajaxError", @ajaxError
-    Model.Notebook.bind "ajaxError", @ajaxError
-    Model.Sync.bind     "ajaxError", @ajaxError
-    Model.Session.bind  "ajaxError", @ajaxError
+jQuery.validator.messages = 
+  required:    "required"
+  remote:      "remote"
+  email:       "email"
+  url:         "url"
+  date:        "date"
+  dateISO:     "dateISO"
+  number:      "number"
+  digits:      "digits"
+  creditcard:  "creditcard"
+  equalTo:     "equalto"
+  maxlength:   "maxlength"
+  minlength:   "minlength"
+  rangelength: "rangelength"
+  range:       "range"
+  max:         "max"
+  min:         "min"
 
-    @append(@pages = new Manager.Pages)
+jQuery.validator.setDefaults
+  invalidHandler: (event, validator)->
+    $("[id^='invalid-']", event.currentTarget).addClass "hidden"
+    for obj in validator.errorList
+      context = $(obj.element).parents(".control-group")[0]
+      if context
+        console.log "#invalid-#{obj.element.name}-with-#{obj.message}"
+        $("#invalid-#{obj.element.name}-with-#{obj.message}").removeClass "hidden"
+      $(context).addClass "error"
+  showErrors: -> null
 
-    for key, value of @pages.controllers
-      obj = @pages[key]
-      obj.bind "forbidden", @forbidden
-      obj.bind "fatal",     @fatal
-      obj.bind "loading",   @loading
-      obj.bind "loaded",    @loaded
-
-    Spine.Route.setup(history: true)   
-
-  loading:   => @pages.loading.trigger "show"
-  loaded:    => @pages.loading.trigger "hide"
-  forbidden: => @pages.error.trigger   "show"
-  fatal:     => @pages.error.trigger   "show"
-
-  ajaxError: (record, xhr, settings, error)=>
-    # console.log record
-    # console.log xhr
-    console.log settings
-    console.log error
-    @pages.error.trigger "show"
-  events:
-    "click a[href$='/logout']": "logout"
-  logout: (event)->
-    event.preventDefault()
-    @pages.loading.trigger "show"
-    @navigate "/logout"
-
-new App()
-
+jQuery.validator.addMethod "regex", (value, element, params)->
+  console.log this
+  false
+, "regex"
