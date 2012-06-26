@@ -53,7 +53,7 @@ namespace:assets do
   end
 
   def sprockets targets
-    Object.send(:remove_const, :Rails)
+    Object.send(:remove_const, :Rails) if defined?(Rails)
     Bundler.require :assets
 
     vendors = []
