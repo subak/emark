@@ -215,8 +215,8 @@ task:build => [
 task:build do
   require "./config/environment"
   if "production" == config.environment
-    Rake::Task["build:minjs:dashboard"]
-    Rake::Task["build:minjs:octopress"]
+    Rake::Task["build:minjs:dashboard"].execute
+    Rake::Task["build:minjs:octopress"].execute
   end
 end
 
