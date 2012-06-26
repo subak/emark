@@ -4,9 +4,9 @@ $.ajaxSetup cache: false
 
 Spine.Controller.include
   view: (name) ->
-    JST["octopress/views/layouts/#{name}"] || -> "not found"
+    window.JST["octopress/views/layouts/#{name}"] || -> "not found"
   include: (name) ->
-    JST["octopress/views/includes/#{name}"] || -> "not found"
+    window.JST["octopress/views/includes/#{name}"] || -> "not found"
   date: (time) ->
     date = new Date(time)
     date.getMonthName = ->
