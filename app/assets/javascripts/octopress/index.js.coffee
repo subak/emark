@@ -233,7 +233,7 @@ class App extends Spine.Controller
     $('a:not([target="_blank"]):not([href^="/"])').each ->
       href = $(this).attr("href")
       $(this).attr("target", "_blank") if -1 == href.indexOf(blog.bid)
-    twttr.widgets.load() if twttr?
+    window.twttr.widgets.load() if window.twttr?
 
 
   ready: (name)->
