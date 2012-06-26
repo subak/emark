@@ -1,7 +1,5 @@
 # -*- coding: utf-8; -*-
 
-require File.join File.expand_path(__FILE__), "../publish"
-
 module Emark
   module Publish
     module MetaHelper

@@ -7,6 +7,7 @@ gem "oauth"
 gem "thrift", :git => "git://github.com/McRipper/thrift-1.9.3.git"
 gem "thrift_client", "~> 0.8.1", :git => "git://github.com/McRipper/thrift_client.git"
 gem "activerecord", :require => "active_record"
+gem "activesupport", :require => "active_support"
 gem "eventmachine"
 gem "addressable", :require => "addressable/uri"
 
@@ -23,6 +24,10 @@ group :publish do
 end
 
 group :rails do
+end
+
+group :daemon do
+  gem "daemons"
 end
 
 group :assets do

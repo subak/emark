@@ -1,11 +1,13 @@
 #!/usr/bin/env ruby
 # -*- coding: utf-8 -*-
 
-dir = File.dirname File.expand_path(__FILE__)
-require File.join dir, "publish"
-require File.join dir, "blog"
-require File.join dir, "entry"
-require File.join dir, "meta"
+run_dir  = File.dirname File.expand_path(__FILE__)
+run_root = File.join run_dir, "../../"
+Dir::chdir run_root
+require File.join run_dir, "publish"
+require File.join run_dir, "blog"
+require File.join run_dir, "entry"
+require File.join run_dir, "meta"
 
 include Emark::Publish
 

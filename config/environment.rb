@@ -4,26 +4,24 @@ require File.expand_path "../application.rb", __FILE__
 include Emark
 
 dir = File.expand_path "."
-config.root   = dir
-config.public = File.join dir, "public"
-config.public_blog   = File.join(config.public, "_")
-#config.evernote_host = "sandbox.evernote.com"
-config.evernote_host = "www.evernote.com"
+config.root   =        dir
+config.public =        File.join dir, "public"
+config.public_blog =   File.join(config.public, "_")
+config.cache_host =    "en.cdn-cache.com"
+config.evernote_host = "www.evernote.com" # "sandbox.evernote.com"
 config.evernote_site = "https://#{config.evernote_host}"
 config.evernote_oauth_consumer_key =    "tk84-1998"
 config.evernote_oauth_consumer_secret = "df5c4560b5604a97"
 config.evernote_user_notes_max =        500
-config.cache_host = "en.cdn-cache.com"
 
-config.environment = ENV["RACK_ENV"]
-
+config.environment =      ENV["RACK_ENV"]
 case config.environment
 when "production"
   config.site_protocol =  "http"
-  config.site_host =      "everblog.subak.jp"
+  config.site_host =      "emark.jp"
   config.site_port =      80
   config.admin_protocol = "https"
-  config.admin_host =     "everblog.subak.jp"
+  config.admin_host =     "emark.jp"
   config.admin_port =     443
   config.cdn_host =       "emark.cdn-cache.com"
   config.cdn_port =       80
