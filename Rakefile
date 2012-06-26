@@ -124,7 +124,7 @@ namespace:assets do
 
     fsevent = FSEvent.new
 
-    paths = ["app/assets/javascripts", "app/assets/stylesheets", "app/views"]
+    paths = ["app/assets", "app/views"]
     options = {
       :latency => 2
     }
@@ -206,7 +206,7 @@ task :default => :spec
 desc "spec"
 task:spec do
   sh "bundle exec rake db:migrate RAILS_ENV=test"
-  sh 'rspec -cfs -P "spec/publish/*_spec.rb"'
+  sh 'rspec -cfs -P "spec/**/*_spec.rb"'
 end
 
 begin

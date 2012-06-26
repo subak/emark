@@ -191,6 +191,7 @@ HAML
           update = UpdateManager.new Table.engine
           update.table db.sync
           update.set data
+          update.where(db.sync[:note_guid].eq guid)
           db.execute update.to_sql
         end
 

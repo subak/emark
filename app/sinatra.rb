@@ -201,6 +201,7 @@ get "/" do
 end
 
 
+# index
 get "/blogs" do
   sleep 0.5
   select = db.blog.project(SqlLiteral.new "*")
@@ -209,6 +210,7 @@ get "/blogs" do
 end
 
 
+# open
 post "/blogs" do
   params = JSON.parse(request.body.read)
 
@@ -250,6 +252,7 @@ post "/blogs" do
 end
 
 
+# config
 put "/blogs/:bid" do |bid|
   params = JSON.parse(request.body.read)
   params["about_me"]            = nil if "" == params["about_me"]
@@ -285,8 +288,7 @@ put "/blogs/:bid" do |bid|
 end
 
 
-##
-# ブログを削除
+# close
 delete "/blogs/:bid" do |bid|
   db.transaction do
     delete = DeleteManager.new Table.engine
@@ -358,8 +360,8 @@ get "/notebooks" do
 end
 
 
-##
-# bidのチェック
+
+# check
 get "/check/bid" do
   bid = params[:bid]
   raise Forbidden if bid.!
@@ -372,7 +374,7 @@ get "/check/bid" do
 end
 
 
-# 同期リクエスト
+# sync
 get "/sync/:bid" do |bid|
   select = db.blog.project(db.blog[:bid])
   select.where(db.blog[:uid].eq @session[:uid])
@@ -404,7 +406,7 @@ get "/sync/:bid" do |bid|
 end
 
 
-##
+# logout
 # sidを付ける意味があるのか？
 delete "/logout/:sid" do |sid|
   raise Fatal if @session[:sid] != sid

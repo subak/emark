@@ -1,0 +1,5 @@
+%section
+  %h1 Latest Tweets
+  %ul#tweets
+    %li.loading Status updating...
+  %a.twitter-follow-button{href: "http://twitter.com/#{@blog.twitter_user}", data-show-count: "true"}= "Follow @#{@blog.twitter_user}"

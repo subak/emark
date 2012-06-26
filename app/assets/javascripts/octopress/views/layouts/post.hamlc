@@ -9,6 +9,9 @@
         %time{datetime: date.toISOString(), pubdate: true, date-updated: "true"}= "#{date.getMonthName()} #{date.getDate()}"
           %span th
           = date.getFullYear()
+      - if @blog.twitter_user?.length >= 1
+        .sharing
+          %a.twitter-share-button{href: "http://twitter.com/share", data-via: @blog.twitter_user, data-counturl: "http://#{@blog.id}/#{@entry.id}"} Tweet
       %p.meta
         - if @previous?
           / &laquo;
