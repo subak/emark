@@ -53,7 +53,7 @@ namespace:assets do
   end
 
   def sprockets targets
-    require "v8"
+    Object.send(:remove_const, :Rails)
     Bundler.require :assets
 
     vendors = []
