@@ -21,7 +21,7 @@
 
 Spine.Controller.include
   view: (name) ->
-    JST["dashboard/views/#{name}"]
+    window.JST["dashboard/views/#{name}"]
 
 jQuery.validator.messages = 
   required:    "required"
