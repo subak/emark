@@ -30,6 +30,7 @@ end
 namespace:assets do
   def haml targets
     require "sass/plugin"
+    Object.send(:remove_const, :Rails) if defined?(Rails)
     Bundler.require :assets
     require "./config/environment"
 
