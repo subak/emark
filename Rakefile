@@ -53,6 +53,7 @@ namespace:assets do
   end
 
   def sprockets targets
+    require "v8"
     Bundler.require :assets
 
     vendors = []
