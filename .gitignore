@@ -8,7 +8,7 @@
 !/tmp/.gitkeep
 /coverage
 /test
-/scripts
+/log
 /app/assets/javascripts/config.js
 
 /files

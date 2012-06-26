@@ -3,12 +3,30 @@
 require "pp"
 require "bundler"
 
+
 if "test" == ENV["RAILS_ENV"]
   Bundler.require :test
   require "ruby-debug"
   Debugger.start
 end
 
+
+task :default => :spec
+desc "spec"
+task:spec do
+  sh "bundle exec rake db:migrate RAILS_ENV=test"
+  sh 'rspec -cfs -P "spec/**/*_spec.rb"'
+end
+
+begin
+  require 'tasks/standalone_migrations'
+rescue LoadError => e
+  puts "gem install standalone_migrations to get db:migrate:* tasks! (Error: #{e})"
+end
+
+
+##
+# assets
 namespace:assets do
   def haml targets
     require "sass/plugin"
@@ -158,6 +176,8 @@ desc "assets"
 task:assets => ["assets:haml", "assets:sprockets"]
 
 
+##
+# build
 namespace:build do
   desc "nginx"
   task:nginx do
@@ -201,32 +221,44 @@ task:build do
 end
 
 
-task :default => :spec
+##
+# run
+namespace:run do
+  namespace:sinatra do
+    desc "start"
+    task:start do
+      sh "bundle exec thin start -e #{ENV["RACK_ENV"]} -d --socket tmp/thin.sock"
+    end
 
-desc "spec"
-task:spec do
-  sh "bundle exec rake db:migrate RAILS_ENV=test"
-  sh 'rspec -cfs -P "spec/**/*_spec.rb"'
+    desc "stop"
+    task:stop do
+      sh "bundle exec thin stop -e #{ENV["RACK_ENV"]} --socket tmp/thin.sock"
+    end
+
+    desc "run"
+    task:run do
+      sh "bundle exec thin start -e #{ENV["RACK_ENV"]} --socket tmp/thin.sock"
+    end
+  end
+
+  namespace:publish do
+    def publish command
+      sh "./scripts/publish.rb #{command}"
+    end
+
+    ["start", "stop", "run"].each do |command|
+      desc command
+      task command do
+        publish command
+      end
+    end
+  end
 end
-
-begin
-  require 'tasks/standalone_migrations'
-rescue LoadError => e
-  puts "gem install standalone_migrations to get db:migrate:* tasks! (Error: #{e})"
-end
-
 
 
 
 __END__
 
-
-
-begin
-  require 'tasks/standalone_migrations'
-rescue LoadError => e
-  puts "gem install standalone_migrations to get db:migrate:* tasks! (Error: #{e})"
-end
 
 begin
   require 'jasmine'
@@ -241,94 +273,3 @@ desc "jspec"
 task:jspec do
   sh "bundle exec jasmine-headless-webkit -c"
 end
-
-namespace :rspec do
-  namespace :publish do
-    begin
-      require "pp"
-      require "rb-fsevent"
-    rescue LoadError
-      puts "rspec:publish can't load rb-fsevent"
-    end
-
-    desc "rspec:publish:blog"
-    task :blog do
-      sh "rspec spec/publish/blog_spec.rb -cfs"
-      fsevent = FSEvent.new
-      fsevent.watch ["spec/publish", "app/workers"], ["--latency", "1.5"] do
-        begin
-          sh "rspec spec/publish/blog_spec.rb -cfs"
-        rescue Exception => e
-          pp e.backtrace
-        end
-      end
-      fsevent.run
-    end
-
-    desc "rspec:publish:entry"
-    task :entry do
-      sh "rspec spec/publish/entry_spec.rb -cfs"
-      fsevent = FSEvent.new
-      fsevent.watch ["spec/publish", "app/workers"], ["--latency", "1.5"] do
-        begin
-          sh "rspec spec/publish/entry_spec.rb -cfs"
-        rescue Exception => e
-          pp e.backtrace
-        end
-      end
-      fsevent.run
-    end
-
-    desc "rspec:publish:meta"
-    task :meta do
-      sh "rspec spec/publish/meta_spec.rb -cfs"
-      fsevent = FSEvent.new
-      fsevent.watch ["spec/publish", "app/workers"], ["--latency", "1.5"] do
-#        begin
-          sh "rspec spec/publish/meta_spec.rb -cfs"
-        # rescue Exception => e
-        #   pp e.backtrace
-        # end
-      end
-      fsevent.run
-    end
-  end
-end
-
-namespace:haml do
-  begin
-    require "pp"
-    require "rb-fsevent"
-    require "haml"
-    require "./config/environment"
-  rescue LoadError
-    puts "rspec:publish can't load rb-fsevent"
-  end
-
-  desc "haml:octopress"
-  task:octopress do
-    octopress = "public/emark.jp/octopress/index.html"
-    File.open octopress, "w" do |fp|
-      fp.write Haml::Engine.new(File.read("app/views/layouts/octopress.haml"), :format => :html5).render
-    end
-    puts "write to #{octopress}"
-  end
-
-  desc "haml:dashboard"
-  task:dashboard do
-  end
-
-  desc "haml:fsevent"
-  task:fsevent do
-    fsevent = FSEvent.new
-    fsevent.watch ["app"] do
-      begin
-        Rake::Task["haml:octopress"].execute
-      rescue Exception => e
-        pp e.backtrace
-      end
-    end
-    fsevent.run
-  end
-end
-
