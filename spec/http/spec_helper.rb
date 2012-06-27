@@ -13,50 +13,6 @@ ActiveRecord::Base.configurations = YAML.load(File.read "./db/config.yml")
 ActiveRecord::Base.establish_connection config.environment
 Table.engine = ActiveRecord::Base
 
-configure do
-  set :db, ActiveRecord::Base.connection.raw_connection
-  settings.db.busy_handler do
-    fb = Fiber.current
-    EM.add_timer do
-      fb.resume true
-    end
-    Fiber.yield
-  end
-end
-
-helpers do
-  def db.session
-    settings.db_session
-  end
-
-  def db.blog
-    settings.db_blog
-  end
-
-  def db.blog_q
-    settings.db_blog_q
-  end
-
-  def db.sync
-    settings.db_sync
-  end
-
-  def db
-    settings.db
-  end
-end
-
-##
-# 待ち時間無し
-def sleep wait
-  fb = Fiber.current
-  logger.debug "sleep wait:#{wait}"
-  EM.add_timer do
-    fb.resume
-  end
-  Fiber.yield
-end
-
 module Rack
   module Test
     class Cookie
@@ -103,21 +59,12 @@ module Helpers
   end
 
   def db
-    ActiveRecord::Base.connection.raw_connection
+    @db ||= connection
   end
 
-  db = db
-
-  def db.session
-    Table.new(:session)
-  end
-
-  def db.blog
-    Table.new(:blog)
-  end
-
-  def db.blog_q
-    Table.new(:blog_q)
+  ##
+  # 待ち時間無し
+  def sleep wait
   end
 
   def admin_url path

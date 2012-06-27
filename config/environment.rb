@@ -39,7 +39,7 @@ else
   config.cdn_host =       "emark.cdn.localhost"
   config.cdn_port =       8080
   config.nginx_conf =     "/Volumes/Data/Users/hiro/Dev/nginx/conf/include/emark.conf"
-  config.logger_level =   Logger::INFO
+  config.logger_level =   Logger::DEBUG
   config.thread_abort =   true
   config.cpu_core =       1
 end

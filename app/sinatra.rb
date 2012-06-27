@@ -17,7 +17,7 @@ require "errors_types.rb"
 
 Thread.abort_on_exception = config.thread_abort
 EM.threadpool_size = 100
-use Rack::FiberPool , :size => 200
+use Rack::FiberPool , :size => 100
 use Rack::Session::Cookie, {
   :http_only => true,
   :secure    => true
@@ -28,47 +28,19 @@ ActiveRecord::Base.establish_connection config.environment
 include Arel
 Table.engine = ActiveRecord::Base
 
+require "./app/helpers/emark"
+include Emark
 
 ##
 # sinatra
 configure do
   disable :show_exceptions
   set :environment, config.environment
-
-  set :db, ActiveRecord::Base.connection.raw_connection
-  set :db_session, Table.new(:session)
-  set :db_blog,    Table.new(:blog)
-  set :db_blog_q,  Table.new(:blog_q)
-  set :db_sync,    Table.new(:sync)
-
-  settings.db.busy_handler do
-    fb = Fiber.current
-    EM.add_timer do
-      fb.resume true
-    end
-    Fiber.yield
-  end
 end
 
 helpers do
-  def db.session
-    settings.db_session
-  end
-
-  def db.blog
-    settings.db_blog
-  end
-
-  def db.blog_q
-    settings.db_blog_q
-  end
-
-  def db.sync
-    settings.db_sync
-  end
-
   def db
-    settings.db
+    @db
   end
 end
 
@@ -87,6 +59,7 @@ end
 before do
   logger.level = config.logger_level
 
+  @db      = connection
   @session = {}
   sid = request.cookies["sid"]
 
@@ -424,32 +397,4 @@ delete "/logout/:sid" do |sid|
   {
     location: config.site_href
   }.to_json
-end
-
-
-def sleep wait
-  fb = Fiber.current
-  logger.debug "sleep wait:#{wait}"
-  EM.add_timer wait do
-    fb.resume
-  end
-  Fiber.yield
-end
-
-
-def thread &block
-  fb = Fiber.current
-  EM.
-    defer(
-    EM.Callback do
-            begin
-              block.call
-            rescue Exception => e
-              e
-            end
-          end,
-    EM.Callback { |e| fb.resume e })
-  e = Fiber.yield
-  raise e if e.kind_of? Exception
-  e
 end

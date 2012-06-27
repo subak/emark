@@ -145,18 +145,19 @@ describe %!delete "/blogs/:bid"! do
       end
 
       it "エイリアス削除" do
-        sync do
-          path = File.join(config.public_blog, @bid.slice(0, 2), @bid, "test.html")
-          FileUtils.mkdir_p File.dirname(path)
-          FileUtils.touch path
-          FileUtils.symlink path, "#{path}.link" if File.exist?("#{path}.link").!
+        path = File.join(config.public_blog, @bid.slice(0, 2), @bid, "test.html")
+        FileUtils.mkdir_p File.dirname(path)
+        FileUtils.touch path
+        FileUtils.symlink path, "#{path}.link" if File.exist?("#{path}.link").!
 
+        sync do
           delete("/blogs/#{@bid}", {}, {
                    "HTTP_COOKIE" => @http_cookie
                  })
-          last_response.ok?.should be_true
-          File.exist?(path).should be_false
         end
+
+        last_response.ok?.should be_true
+        File.exist?(path).should be_false
       end
 
       it "publish.syncに削除済みフラグを付ける" do
