@@ -1,5 +1,6 @@
 # -*- coding: utf-8; -*-
 
+require "./app/workers/publish/common"
 require "ruby-debug"
 Debugger.start
 

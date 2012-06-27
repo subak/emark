@@ -10,12 +10,15 @@ require "./app/sinatra"
 config.logger_level = Logger::INFO
 
 require "./spec/http/spec_helper.rb"
+
+
+describe "request_token" do
+
 RSpec.configure do
   include Helpers
   include Rack::Test::Methods
 end
 
-describe "request_token" do
   before:all do
     sync do
       url = URI::Generic.
@@ -96,6 +99,7 @@ describe "access_token" do
         end
 
         it "response.bodyは/を返す" do
+pp last_response
           last_response.body.should == "/"
         end
 

@@ -6,8 +6,8 @@ SimpleCov.start do
   add_filter "lib/Evernote/"
 end
 
-require "./app/workers/entry"
 require "./spec/publish/spec_helper"
+require "./app/workers/publish/entry"
 
 RSpec.configure do
   include Helper

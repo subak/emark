@@ -28,11 +28,13 @@ ActiveRecord::Base.establish_connection config.environment
 include Arel
 Table.engine = ActiveRecord::Base
 
+
 ##
 # sinatra
 configure do
   disable :show_exceptions
   set :environment, config.environment
+
   set :db, ActiveRecord::Base.connection.raw_connection
   set :db_session, Table.new(:session)
   set :db_blog,    Table.new(:blog)

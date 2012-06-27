@@ -3,7 +3,6 @@
 require "pp"
 require "bundler"
 
-
 if "test" == ENV["RAILS_ENV"]
   Bundler.require :test
   require "ruby-debug"
@@ -12,11 +11,26 @@ end
 
 
 task :default => :spec
+
+
 desc "spec"
 task:spec do
-  sh "bundle exec rake db:migrate RAILS_ENV=test"
-  sh 'rspec -cfs -P "spec/**/*_spec.rb"'
+  ENV["RAILS_ENV"] = "test"
+  ENV["RACK_ENV"]  = "test"
+  require 'rspec/core/rake_task'
+  RSpec::Core::RakeTask.new do |spec|
+#    spec.spec_files = FileList['spec/rdgc/**/*_spec.rb']
+#    spec.pattern = "spec/**/*_spec.rb"
+#    spec.spec_files = ['spec/http/0_token_spec.rb']
+    spec.spec_opts  = ["-cfs"]
+  end
 end
+
+# desc "spec"
+# task:spec do
+#   sh "bundle exec rake db:migrate RAILS_ENV=test"
+#   sh 'rspec -cfs -P "spec/**/*_spec.rb"'
+# end
 
 begin
   require 'tasks/standalone_migrations'
