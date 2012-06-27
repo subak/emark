@@ -8,7 +8,7 @@
               %tr
                 %td
                   %h3
-                    %a{href: "http://#{blog.id}"}= blog.title
+                    %a{href: "http://#{blog.id}", target: "_blank"}= blog.title
               %tr
                 %td
                   %p= blog.subtitle

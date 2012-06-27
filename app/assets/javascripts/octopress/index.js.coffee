@@ -238,12 +238,12 @@ class App extends Spine.Controller
 
   ready: (name)->
     $.getScript "#{Emark.config.cdn_href}/octopress/javascripts/octopress.js"
-    blog = Blog.first()    
+    blog = Blog.first()
     if blog.twitter_user?.length >= 1
       $.getScript "http://platform.twitter.com/widgets.js"
       $.getScript "#{Emark.config.cdn_href}/octopress/javascripts/twitter.js", ->
         getTwitterFeed blog.twitter_user, blog.twitter_tweet_count, true
-
+    new GAS("UA-29319562-2")
 
   binding: ->
     $("body").on "click", "a", (event)=>
